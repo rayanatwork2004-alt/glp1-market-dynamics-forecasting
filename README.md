@@ -1,130 +1,229 @@
-# GLP-1 Market Dynamics, Prescription Forecasting, and Companion Nutrition Cross-Market Analytics
+# GLP-1 Market Dynamics, Prescription Forecasting, and Companion Nutrition Analytics
 
-A portfolio-grade healthcare commercial analytics project that simulates a longitudinal GLP-1 prescription market, links therapy adoption to a synthetic companion medical-nutrition market, calculates life-sciences commercial KPIs, and produces 24-month segment-level forecasts with uncertainty intervals.
+## Overview
 
-> **Important:** All prescription, pricing, revenue, supplement-demand, and forecast values in this repository are synthetic. Brand and manufacturer names are used to make the analytical scenario recognizable; the generated values must not be represented as IQVIA, FDA, manufacturer, payer, claims, or audited commercial data.
+This project explores how the GLP-1 market changed from January 2022 through December 2025 and how continued prescription growth could influence a related companion nutrition market.
 
-## Why this project is commercially relevant
+I built the project as an end to end healthcare analytics case study using Python. It combines synthetic data generation, pharmaceutical market share analysis, competitive concentration metrics, time series forecasting, and data visualization.
 
-The project demonstrates capabilities commonly expected in healthcare intelligence and life-sciences analytics: longitudinal market construction, launch-aware brand dynamics, NRx/TRx logic, market share, CAGR, HHI concentration analysis, cross-market lead/lag measurement, time-series model selection, forecast confidence intervals, and executive visualization.
+The main goal was to create a project that goes beyond simply building a model. I wanted to show how healthcare data can be turned into commercial insights that help explain market growth, competition, and possible future demand.
 
-The generator uses real-world launch timing for two later entrants to keep the synthetic panel commercially plausible: Mounjaro begins in May 2022 and Zepbound in November 2023. The numerical demand, price, revenue, and market-response assumptions remain synthetic.
+> **Data note:** All prescription, pricing, revenue, supplement demand, and forecast values in this project are synthetic. Brand and manufacturer names are used only to make the analysis realistic and easier to understand. The generated values should not be interpreted as actual IQVIA, manufacturer, claims, payer, or audited commercial data.
 
-## Architecture
+## Key Questions
+
+This project focuses on four main questions:
+
+1. How is GLP-1 prescription volume changing over time?
+2. Which brands are gaining or losing market share?
+3. How does competition change as newer products enter the market?
+4. Could increasing GLP-1 adoption create additional demand in companion nutrition categories?
+
+## Market Trajectory
+
+The first view compares the historical and projected pharmaceutical market with the companion nutrition market.
+
+![GLP-1 and Companion Nutrition Market Trajectory](outputs/figures/01_dual_axis_market_trajectory.png)
+
+The purpose of this chart is to show how growth in one healthcare market could create a related commercial opportunity in another market. In the synthetic data, companion nutrition demand follows GLP-1 adoption with a two month lag.
+
+## Market Share Evolution
+
+![GLP-1 Market Share Evolution](outputs/figures/02_market_share_evolution.png)
+
+The market share view shows how prescription volume changes across Ozempic, Wegovy, Mounjaro, and Zepbound during the historical period.
+
+Instead of assuming every product existed for the full time period, the synthetic data accounts for later market entry for Mounjaro and Zepbound. This makes the competitive dynamics more realistic and creates a clearer shift in market concentration over time.
+
+## Forecast Example
+
+![Zepbound TRx Forecast](outputs/figures/03_zepbound_trx_forecast.png)
+
+The forecasting pipeline projects prescription volume through December 2027 and includes 95% confidence intervals to show forecast uncertainty.
+
+I used SARIMAX because it provides a transparent way to model time series trends while also producing interpretable uncertainty ranges.
+
+## Data Generated
+
+The project creates 48 months of synthetic data covering two connected markets.
+
+### Pharmaceutical Market
+
+The pharmaceutical dataset includes:
+
+* Month
+* Brand Name
+* Manufacturer
+* Molecule
+* TRx
+* NRx
+* Average Wholesale Price USD
+* Gross Revenue USD
+
+Brands included:
+
+* Ozempic
+* Wegovy
+* Mounjaro
+* Zepbound
+
+The pharmaceutical data includes growth trends, monthly variation, product launch timing, pricing changes, and realistic NRx to TRx relationships.
+
+### Companion Nutrition Market
+
+The companion nutrition dataset includes:
+
+* Month
+* Supplement Category
+* Units Sold
+* Average Retail Price USD
+* Total Sales USD
+
+Categories included:
+
+* Protein and Amino Acids
+* Viscous Fibers
+* Targeted Micronutrients
+
+The synthetic demand model links nutrition sales to previous GLP-1 prescription activity. A two month lag is used to represent the idea that consumer demand may respond after treatment adoption rather than immediately.
+
+## Commercial Metrics
+
+I calculated several metrics commonly used in pharmaceutical and healthcare market analysis.
+
+### Market Share
+
+Monthly and annual market share are calculated using each brand's share of total GLP-1 TRx volume.
+
+### CAGR
+
+Compound Annual Growth Rate is calculated for both individual drug brands and companion nutrition categories.
+
+### HHI
+
+The Herfindahl Hirschman Index is calculated each month to measure market concentration.
+
+A higher HHI indicates that prescription volume is concentrated among fewer brands, while a lower HHI suggests a more competitive market.
+
+## Forecasting Approach
+
+Each pharmaceutical brand and nutrition category is forecast independently.
+
+The forecasting workflow:
+
+1. Prepares each monthly time series.
+2. Removes structural periods before product launch where appropriate.
+3. Applies a log transformation to reduce the chance of unrealistic negative forecasts.
+4. Tests multiple SARIMAX specifications.
+5. Selects the model using Akaike Information Criterion.
+6. Generates forecasts from January 2026 through December 2027.
+7. Produces 95% confidence intervals for each forecast.
+
+This approach keeps the forecasting process understandable and reproducible rather than treating the model as a black box.
+
+## Project Structure
 
 ```text
 glp1_market_project/
-├── README.md
-├── pyproject.toml
-├── requirements.txt
-├── run_pipeline.py
-├── Makefile
-├── docs/
-│   ├── data_dictionary.md
-│   └── methodology.md
-├── notebooks/
-│   └── GLP1_cross_market_analysis.ipynb
-├── src/
-│   └── glp1_market/
-│       ├── __init__.py
-│       ├── config.py
-│       ├── data_generation.py
-│       ├── metrics.py
-│       ├── forecasting.py
-│       ├── visualization.py
-│       └── pipeline.py
-└── tests/
-    └── test_pipeline.py
+|
+|-- README.md
+|-- requirements.txt
+|-- pyproject.toml
+|-- run_pipeline.py
+|-- Makefile
+|
+|-- docs/
+|   |-- data_dictionary.md
+|   |-- methodology.md
+|
+|-- notebooks/
+|   |-- GLP1_cross_market_analysis.ipynb
+|
+|-- src/
+|   |-- glp1_market/
+|       |-- __init__.py
+|       |-- config.py
+|       |-- data_generation.py
+|       |-- metrics.py
+|       |-- forecasting.py
+|       |-- visualization.py
+|       |-- pipeline.py
+|
+|-- tests/
+|   |-- test_pipeline.py
+|
+|-- outputs/
+    |-- figures/
 ```
 
-Running the pipeline creates:
+## Tools Used
 
-```text
-data/
-├── pharmaceutical_market.csv
-├── companion_nutrition_market.csv
-└── unified_cross_market_fact.csv
+* Python
+* Pandas
+* NumPy
+* Statsmodels
+* Matplotlib
+* Seaborn
+* Jupyter Notebook
+* Pytest
+* Git and GitHub
 
-outputs/
-├── cross_market_correlation.csv
-├── data_quality_summary.json
-├── metrics/
-├── forecasts/
-└── figures/
+## Running the Project
+
+Clone the repository and move into the project folder:
+
+```bash
+git clone YOUR_REPOSITORY_URL
+cd glp1-market-dynamics-forecasting
 ```
 
-## Module 1 — Synthetic cross-market generation
-
-The pharmaceutical engine produces a balanced monthly panel from January 2022 through December 2025 for Ozempic, Wegovy, Mounjaro, and Zepbound. Brand-specific assumptions drive growth, NRx/TRx ratios, wholesale-price inflation, commercialization factors, seasonality, and Gaussian noise. Structural pre-launch months are represented as zero TRx/NRx rather than missing observations.
-
-The companion-nutrition engine generates Protein & Amino Acids, Viscous Fibers, and Targeted Micronutrients demand. Units are linked to two-month lagged total GLP-1 TRx plus cumulative treatment exposure, creating a deliberately strong but noisy cross-market relationship.
-
-A normalized fact table unifies both markets with standardized fields: `Month`, `Market`, `Segment_Type`, `Segment`, `Manufacturer`, `Molecule`, `Volume`, `New_Volume`, `Price_USD`, and `Revenue_USD`.
-
-## Module 2 — Commercial metrics
-
-The metric layer calculates:
-
-- Monthly and annual TRx market share by brand.
-- Endpoint CAGR using first and last positive annual observations.
-- Annual YoY growth as a companion metric to CAGR.
-- Monthly Herfindahl-Hirschman Index on the conventional 0–10,000 scale.
-- Cross-market Pearson correlation across multiple TRx lead periods in both levels and first differences.
-
-## Module 3 — Forecasting
-
-Each brand/category is modeled independently using SARIMAX. The pipeline:
-
-1. Removes structural pre-launch zeros.
-2. Applies `log1p` transformation to preserve non-negative forecasts.
-3. Searches a compact set of non-seasonal and, when sample size permits, 12-month seasonal specifications.
-4. Selects the minimum-AIC model.
-5. Produces January 2026–December 2027 forecasts with 95% intervals.
-6. Persists model order, seasonal order, AIC, and training-window length for auditability.
-
-Forecasted metrics include pharmaceutical TRx, pharmaceutical gross revenue, and companion-nutrition revenue.
-
-## Module 4 — Executive visualizations
-
-The pipeline produces:
-
-- Dual-axis historical + projected GLP-1 gross revenue and companion-nutrition sales.
-- Stacked-area GLP-1 TRx market-share evolution.
-- Zepbound TRx historical/forecast chart with 95% interval.
-- Protein & Amino Acids companion-nutrition revenue historical/forecast chart with 95% interval.
-
-## Environment setup
+Create a virtual environment:
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate        # macOS/Linux
-# .venv\Scripts\activate       # Windows PowerShell
+```
 
+On Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Install the required packages:
+
+```bash
 pip install --upgrade pip
 pip install -e .[dev]
 ```
 
-## Execute the full pipeline
+Run the complete pipeline:
 
 ```bash
 python run_pipeline.py
 ```
 
-## Run tests
+Run the tests:
 
 ```bash
 pytest
 ```
 
-## Suggested GitHub story
+## What I Learned
 
-A strong repository should explain not only *what* the code produces but *why* each analytic layer matters commercially. In the final README or portfolio case study, frame the narrative around four executive questions:
+This project helped me practice combining technical analysis with healthcare business questions. One of the biggest lessons was that a forecast alone is not enough. The analysis becomes more useful when prescription growth, market share, competition, adjacent market demand, and forecast uncertainty are viewed together.
 
-1. How rapidly is the GLP-1 class expanding, and which brands are gaining share?
-2. Is competitive concentration increasing or decreasing as new entrants scale?
-3. Does GLP-1 adoption create a measurable lagged commercial signal in adjacent nutrition categories?
-4. What does the next 24 months look like by brand/category, and how uncertain are those projections?
+I also learned the importance of separating synthetic assumptions from real world evidence. The relationship between GLP-1 prescriptions and companion nutrition demand in this project is intentionally simulated. It demonstrates how I would analyze a possible cross market relationship, but it does not prove that the same relationship exists in real commercial data.
 
-## Methodological limitations
+## Future Improvements
 
-This is a synthetic market simulation, not a causal clinical study. The two-month lead/lag structure is intentionally engineered and therefore cannot establish real-world causality. SARIMAX forecasts are based on a relatively short synthetic history and should be presented as a modeling demonstration, not investment guidance or a commercial forecast of actual manufacturer performance. Likewise, AWP-like values and gross-revenue calculations are synthetic assumptions and should not be interpreted as net realized price, net sales, payer reimbursement, or audited revenue.
+I plan to continue developing the project by adding:
+
+* Rolling forecast validation using MAE, RMSE, WAPE, and forecast bias
+* Base, upside, and downside commercial scenarios
+* An interactive dashboard for exploring brands and forecasts
+* Additional SQL based data transformation and validation
+* More detailed model diagnostics and forecast comparison
+
+## Disclaimer
+
+This project is for educational and portfolio purposes only. All market volumes, prices, revenues, demand relationships, and forecasts are synthetically generated and should not be used for clinical, investment, pricing, or commercial decision making.

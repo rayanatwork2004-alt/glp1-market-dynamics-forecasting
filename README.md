@@ -16,7 +16,7 @@ Start with **Medicare Part D** to see published fills, spending, share of the fo
 
 | View | Question it answers |
 | --- | --- |
-| Medicare Part D | How have real fills and spending changed for four selected brands, and how well do simple forecasts track them? |
+| Medicare Part D (Prescription Drug Coverage) | How have real fills and spending changed for four selected brands, and how well do simple forecasts track them? |
 | Canada context | What does the new Canadian semaglutide advisory tell us, and what evidence would we need to study its effects? |
 | U.S. market benchmarks | What do real prescription volume estimates, published patient costs, and trial results tell us about competition and access? |
 | Simulated market overview | Which brands gained share within this panel, and which manufacturers own them? |

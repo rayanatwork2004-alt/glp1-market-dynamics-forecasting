@@ -5,36 +5,142 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GLP-1 Market Lab</title>
 <style>
-:root {color-scheme:light; --ink:#132c2a; --muted:#465e59; --green:#00786c; --paper:#f5f8f4; --line:#d6e1da;}
+:root {
+  color-scheme:dark;
+  --ink:#edf3fc;
+  --muted:#a8b8cf;
+  --green:#67e8ce;
+  --paper:#080f1d;
+  --surface:#111c2e;
+  --line:#2b3a50;
+  --accent:#b8a9ff;
+}
 * {box-sizing:border-box}
-body {margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 system-ui,sans-serif}
-header {background:#143732;color:#fff;padding:46px max(5vw, 24px) 36px}
-header p {max-width:760px;margin:12px 0 0;color:#d5e9de}
-h1 {font:clamp(38px,6vw,72px)/1.05 Georgia,serif;margin:12px 0}
-h2 {font:34px/1.15 Georgia,serif;margin:0 0 8px}
-h3 {margin:0 0 8px}
+html {scroll-behavior:smooth;scroll-padding-top:100px}
+body {
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font:15px/1.65 "Segoe UI",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+header {
+  position:relative;
+  overflow:hidden;
+  padding:48px max(24px, calc((100vw - 1224px)/2)) 44px;
+  border-bottom:1px solid var(--line);
+  background:
+    radial-gradient(ellipse at 88% 0%,#5c438940,transparent 55%),
+    radial-gradient(ellipse at 0% 100%,#007e7833,transparent 55%),
+    linear-gradient(120deg,#101e32,#12182b);
+}
+header::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:linear-gradient(#ffffff05 1px,transparent 1px),linear-gradient(90deg,#ffffff05 1px,transparent 1px);
+  background-size:40px 40px;
+  mask-image:linear-gradient(90deg,transparent 40%,#000);
+  pointer-events:none;
+}
+header > * {position:relative;z-index:1}
+header p {max-width:690px;margin:16px 0 0;color:#bac9dd;font-size:17px}
+header small {color:var(--green);font-size:12px;font-weight:650;letter-spacing:.1em;text-transform:uppercase}
+h1 {font-size:clamp(38px,5.5vw,64px);line-height:1.08;letter-spacing:-.055em;font-weight:700;margin:18px 0 0}
+h1 span {color:var(--green)}
+h2 {font-size:clamp(22px,2.5vw,28px);line-height:1.3;letter-spacing:-.025em;font-weight:650;margin:0 0 12px}
+h3 {font-size:16px;line-height:1.45;font-weight:650;margin:26px 0 12px}
+p {margin:12px 0 18px}
 small,.hint {color:var(--muted)}
-header small {color:#a7e0cb;font-size:.85rem;letter-spacing:.09em;text-transform:uppercase}
-nav {display:flex;flex-wrap:wrap;gap:12px;padding:18px 0}
-main {max-width:1180px;margin:auto;padding:0 24px 40px}
-a {color:var(--green)}
-nav a,select {font:inherit;background:white;border:1px solid var(--line);border-radius:8px;padding:8px 12px}
-section {scroll-margin-top:20px;margin:0 0 20px;padding:24px;background:white;border:1px solid var(--line);border-radius:14px}
-.controls,.legend {display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center}
-.legend {margin:8px 0 0}
-.swatch {display:inline-block;width:14px;height:4px;margin-right:6px;vertical-align:middle}
+.hint {font-size:13px;line-height:1.75}
+main {max-width:1280px;margin:auto;padding:0 28px 44px}
+a {color:var(--green);text-underline-offset:3px;text-decoration-thickness:1px}
+a:hover {color:#b5fff0}
+nav {
+  position:sticky;top:0;z-index:10;
+  display:flex;gap:6px;overflow-x:auto;
+  padding:14px 0;margin-bottom:10px;
+  background:#080f1df5;backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--line);
+  scrollbar-width:thin;
+}
+nav a {
+  flex-shrink:0;color:#c5d1e3;text-decoration:none;
+  font-size:13px;font-weight:600;padding:9px 13px;
+  border:1px solid transparent;border-radius:8px;
+  transition:background .15s,border-color .15s;
+}
+nav a:hover,nav a:focus-visible {color:var(--green);border-color:#3d6f6a;background:#173334}
+section {
+  scroll-margin-top:86px;margin:0 0 22px;padding:28px;
+  background:var(--surface);
+  border:1px solid var(--line);border-radius:16px;
+  box-shadow:0 8px 24px #0000001a;
+}
+section:target {border-color:#5b928d}
+section > h2::before {
+  content:"";display:inline-block;width:4px;height:22px;
+  border-radius:4px;background:var(--green);margin-right:12px;vertical-align:-2px;
+}
+#market,#forecast,#scenario {border-top-color:#7665ad}
+#market > h2::before,#forecast > h2::before,#scenario > h2::before {background:var(--accent)}
+.controls,.legend {display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.controls {margin:20px 0}
+label {display:inline-flex;flex-wrap:wrap;align-items:center;gap:10px;color:#c5d1e3;font-size:13px;font-weight:600}
+select {
+  font:inherit;color:var(--ink);background:#0b1525;
+  border:1px solid #40516b;border-radius:8px;padding:10px 34px 10px 12px;
+  cursor:pointer;max-width:100%;min-height:42px;
+}
+select:hover {border-color:var(--green)}
+:focus-visible {outline:2px solid var(--green);outline-offset:4px}
+.legend {margin:8px 0 20px;font-size:13px;color:#c5d1e3}
+.swatch {display:inline-block;width:18px;height:4px;border-radius:3px;margin-right:7px;vertical-align:middle}
 svg {width:100%;height:auto;display:block;margin:12px 0;overflow:visible}
-.grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin:16px 0}
-.card {padding:12px;background:#eef5ef;border-radius:8px}
-.card strong {display:block;font:27px Georgia,serif}
-.scroller {overflow:auto}
-table {border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
-th,td {border-bottom:1px solid var(--line);text-align:left;padding:8px;white-space:nowrap}
-caption {text-align:left;font-weight:bold}
+svg text {font-family:inherit;font-variant-numeric:tabular-nums}
+.grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:22px 0}
+.card {
+  padding:18px 20px;background:linear-gradient(135deg,#1d2d43,#152338);
+  border:1px solid #334560;border-radius:12px;color:#b6c6dd;font-size:12px;font-weight:600;
+}
+.card:nth-child(3n+1) {border-top:2px solid var(--green)}
+.card:nth-child(3n+2) {border-top:2px solid var(--accent)}
+.card:nth-child(3n) {border-top:2px solid #ffc078}
+.card strong {display:block;margin-top:8px;color:var(--ink);font-size:clamp(24px,2.5vw,34px);line-height:1.3;font-weight:650;letter-spacing:-.035em}
+.scroller {overflow:auto;margin:18px 0;scrollbar-width:thin;scrollbar-color:#465874 transparent}
+table {border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td {border-bottom:1px solid var(--line);text-align:left;padding:13px 14px;white-space:nowrap}
+th {background:#18263b;color:#aebfd7;font-size:11px;font-weight:650;letter-spacing:.04em}
+td {color:#e0e9f6}
+tbody tr:hover {background:#1a2b40}
+caption {text-align:left;font-size:14px;font-weight:650;color:var(--ink);padding:0 0 12px}
+details {margin:20px 0;padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:#0c1728}
+summary {cursor:pointer;color:var(--green);font-size:14px;font-weight:600}
+details p {font-size:14px}
+#assumptions,#diagnostics {padding:14px 18px;background:#1d233c;border-left:3px solid var(--accent);border-radius:0 8px 8px 0}
+#diagnostics:empty {display:none}
+@media (max-width:640px) {
+  header {padding:32px 20px}
+  header p {font-size:15px}
+  header small {font-size:10px;letter-spacing:.06em}
+  main {padding:0 12px 28px}
+  section {padding:20px 16px;border-radius:12px}
+  h2 {font-size:22px}
+  nav {gap:2px}
+  nav a {padding:8px 10px;font-size:12px}
+  .grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .card {padding:14px}
+  .card strong {font-size:25px}
+  .controls {align-items:flex-start}
+}
+@media (prefers-reduced-motion:reduce) {
+  html {scroll-behavior:auto}
+  nav a {transition:none}
+}
 </style>
 </head>
 <body>
-<header><small>Healthcare analytics portfolio · Public benchmarks and synthetic forecasts</small><h1>GLP-1 Market Lab</h1>
+<header><small>Healthcare analytics portfolio · Public benchmarks and synthetic forecasts</small><h1>GLP-1 <span>Market Lab</span></h1>
 <p>See what people filled, compare simple forecasts, and explore what could happen if coverage or competition changes.</p></header>
 <main>
 <nav aria-label="Dashboard sections"><a href="#medicare">Medicare Part D</a><a href="#medicaid">Medicaid</a><a href="#canada">Canada context</a><a href="#evidence">U.S. market benchmarks</a><a href="#market">Simulated market</a><a href="#forecast">Forecast audit</a><a href="#scenario">Scenario explorer</a></nav>
@@ -123,7 +229,7 @@ const compact = n => n == null ? "—" : fmt.format(n);
 const money = n => "$"+compact(n);
 const total = (rows,key) => rows.reduce((sum,row)=>sum+row[key],0);
 const month = d => d.slice(0,7);
-const colors = ["#00786c","#975018","#4059a4","#a23463"];
+const colors = ["#67e8ce","#ffc078","#b8a9ff","#ff8eb1"];
 const svgNS = "http://www.w3.org/2000/svg";
 function node(tag, attrs, label) {
   const item = document.createElementNS(svgNS,tag);
@@ -141,21 +247,21 @@ function chart(id, title, dates, series, format, band, showPoints = false, selec
   svg.append(node("title",{},title));
   for(let i=0;i<=4;i++){
     const v=max*i/4;
-    svg.append(node("line",{x1:left,x2:w-right,y1:y(v),y2:y(v),stroke:"#d6e1da"}));
-    svg.append(node("text",{x:left-8,y:y(v)+4,"text-anchor":"end","font-size":12,fill:"#465e59"},format(v)));
+    svg.append(node("line",{x1:left,x2:w-right,y1:y(v),y2:y(v),stroke:"#2b3a50"}));
+    svg.append(node("text",{x:left-8,y:y(v)+4,"text-anchor":"end","font-size":12,fill:"#a8b8cf"},format(v)));
   }
   const selectedX = selectedIndex >= 0 ? x(selectedIndex) : null;
   if (selectedX !== null) {
     svg.append(node("rect", {x:selectedX-8, y:top, width:16, height:h-bottom-top,
-      fill:"#d4e9df", "data-selected-quarter":dates[selectedIndex]}));
+      fill:"#31465e", "data-selected-quarter":dates[selectedIndex]}));
   }
   const marks=[0,Math.floor((dates.length-1)/2),dates.length-1];
   [...new Set(marks)].filter(i=>i>=0).forEach(i=>svg.append(node("text",
-    {x:x(i),y:h-7,"text-anchor":"middle","font-size":12,fill:"#465e59"},month(dates[i]))));
+    {x:x(i),y:h-7,"text-anchor":"middle","font-size":12,fill:"#a8b8cf"},month(dates[i]))));
   if(band){
     const upper=band.high.flatMap((v,i)=>v==null?[]:[[x(i),y(v)]]);
     const lower=band.low.flatMap((v,i)=>v==null?[]:[[x(i),y(v)]]).reverse();
-    svg.append(node("polygon",{points:[...upper,...lower].join(" "),fill:"#d9ede5"}));
+    svg.append(node("polygon",{points:[...upper,...lower].join(" "),fill:"#263f50"}));
   }
   const selectedPoints = [];
   series.forEach(s=>{
@@ -181,12 +287,12 @@ function chart(id, title, dates, series, format, band, showPoints = false, selec
   });
   if (selectedX !== null) {
     svg.append(node("line", {x1:selectedX, x2:selectedX, y1:top, y2:h-bottom,
-      stroke:"#244f42", "stroke-width":2}));
+      stroke:"#d9eaff", "stroke-width":2}));
     svg.append(...selectedPoints);
   }
   const heading=document.createElement("h3");heading.textContent=title;
   const legend=document.createElement("div");legend.className="legend";
-  [...series,...(band?[{label:"95% prediction interval",color:"#b8dbcb"}]:[])].forEach(s=>{
+  [...series,...(band?[{label:"95% prediction interval",color:"#263f50"}]:[])].forEach(s=>{
     const label=document.createElement("span");
     const swatch=document.createElement("span");swatch.className="swatch";swatch.style.background=s.color;
     label.append(swatch,s.label);legend.append(label);

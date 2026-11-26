@@ -60,7 +60,7 @@ caption {text-align:left;font-weight:bold}
 <section id="medicaid" hidden><h2>Medicaid · quarterly prescription counts</h2>
 <p>This chart uses national Medicaid totals for the same four brands. It covers prescriptions reimbursed by Medicaid, a separate program from Medicare Part D.</p>
 <label>Inspect quarter <select id="sdud-period"></select></label>
-<p class="hint">The selected quarter is highlighted on the chart and detailed below.</p>
+<p class="hint">The shaded column marks the quarter shown in the table.</p>
 <div id="sdud-chart"></div>
 
 <div id="sdud-table" class="scroller"></div>
@@ -144,10 +144,10 @@ function chart(id, title, dates, series, format, band, showPoints = false, selec
     svg.append(node("line",{x1:left,x2:w-right,y1:y(v),y2:y(v),stroke:"#d6e1da"}));
     svg.append(node("text",{x:left-8,y:y(v)+4,"text-anchor":"end","font-size":12,fill:"#465e59"},format(v)));
   }
-  if (selectedIndex >= 0) {
-    const selectedX = x(selectedIndex);
-    svg.append(node("line", {x1:selectedX, x2:selectedX, y1:top, y2:h-bottom,
-      stroke:"#244f42", "stroke-width":2, "stroke-dasharray":"4 3"}));
+  const selectedX = selectedIndex >= 0 ? x(selectedIndex) : null;
+  if (selectedX !== null) {
+    svg.append(node("rect", {x:selectedX-8, y:top, width:16, height:h-bottom-top,
+      fill:"#d4e9df", "data-selected-quarter":dates[selectedIndex]}));
   }
   const marks=[0,Math.floor((dates.length-1)/2),dates.length-1];
   [...new Set(marks)].filter(i=>i>=0).forEach(i=>svg.append(node("text",
@@ -157,6 +157,7 @@ function chart(id, title, dates, series, format, band, showPoints = false, selec
     const lower=band.low.flatMap((v,i)=>v==null?[]:[[x(i),y(v)]]).reverse();
     svg.append(node("polygon",{points:[...upper,...lower].join(" "),fill:"#d9ede5"}));
   }
+  const selectedPoints = [];
   series.forEach(s=>{
     let path="", pen=false;
     s.values.forEach((v,i)=>{
@@ -164,19 +165,25 @@ function chart(id, title, dates, series, format, band, showPoints = false, selec
       path+=(pen?" L":" M")+x(i)+" "+y(v);
       if (showPoints) {
         const isSelected = i === selectedIndex;
-        const point = node("circle", {cx:x(i), cy:y(v), r:isSelected ? 6 : 4, fill:s.color});
         if (isSelected) {
-          point.setAttribute("stroke", "#fff");
-          point.setAttribute("stroke-width", "2");
+          const point = node("circle", {cx:x(i), cy:y(v), r:6, fill:s.color,
+            stroke:"#fff", "stroke-width":2});
           point.append(node("title", {}, s.label + ": " + v.toLocaleString("en-US") + " published prescriptions"));
+          selectedPoints.push(point);
+        } else {
+          svg.append(node("circle", {cx:x(i), cy:y(v), r:4, fill:s.color}));
         }
-        svg.append(point);
       }
       pen=true;
     });
     svg.append(node("path",{d:path,fill:"none",stroke:s.color,"stroke-width":2.5,
       "stroke-dasharray":s.dash?"6 4":"none"}));
   });
+  if (selectedX !== null) {
+    svg.append(node("line", {x1:selectedX, x2:selectedX, y1:top, y2:h-bottom,
+      stroke:"#244f42", "stroke-width":2}));
+    svg.append(...selectedPoints);
+  }
   const heading=document.createElement("h3");heading.textContent=title;
   const legend=document.createElement("div");legend.className="legend";
   [...series,...(band?[{label:"95% prediction interval",color:"#b8dbcb"}]:[])].forEach(s=>{
@@ -356,7 +363,7 @@ function renderMedicaid(source) {
   const series = brands.map((brand, index) => ({
     label: brand,
     color: colors[index],
-    values: periods.map(period => rows.find(row => row.brand === brand && row.period === period).fills)
+    values: periods.map(period => rows.find(row => row.brand === brand && row.period === period)?.fills ?? null)
   }));
   options("sdud-period", periods);
   el("sdud-period").value = rows.findLast(row => row.fills != null).period;

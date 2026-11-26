@@ -13,6 +13,9 @@ from glp1_market.data_generation import (
     calculate_cross_market_correlation,
     generate_all_data,
 )
+from glp1_market.dashboard import write_dashboard
+from glp1_market.scenarios import build_scenario
+from glp1_market.validation import backtest, summarize_backtest
 from glp1_market.forecasting import build_forecasts
 from glp1_market.metrics import build_commercial_metrics
 from glp1_market.visualization import (
@@ -69,6 +72,32 @@ def run_pipeline(config: ProjectConfig | None = None) -> dict[str, pd.DataFrame]
         supplements,
         forecast_periods=config.forecast_periods,
     )
+
+    audit_detail = backtest(pharma, supplements)
+    audit = summarize_backtest(audit_detail)
+    scenarios, scenario_shares = [], []
+    for name, assumptions, description in (
+        ("Base", {}, "Implied by the segment forecasts. No commercial adjustments."),
+        ("Broader access", {"volume": 0.12, "shift": 0.04, "response": 0.35},
+         "12% more panel TRx and 4 percentage points of share shifted to Lilly where feasible. "
+         "After the configured lag, each 1% change in TRx adds 0.35% to modeled nutrition sales."),
+        ("Tighter payer coverage", {"volume": -0.10, "shift": -0.06, "price": -0.08, "response": 0.35},
+         "10% fewer panel TRx, up to 6 percentage points of share shifted away from Lilly and "
+         "8% lower gross revenue per TRx. Nutrition uses the same lag and sensitivity."),
+    ):
+        case, shares = build_scenario(
+            forecasts, pharma, config.consumer_adoption_lag_months, **assumptions,
+        )
+        scenarios.append(case.assign(Scenario=name, Assumptions=description))
+        scenario_shares.append(shares.assign(Scenario=name, Data_Type="Synthetic scenario"))
+    scenario_summary = pd.concat(scenarios, ignore_index=True)
+    scenario_brand_share = pd.concat(scenario_shares, ignore_index=True)
+    _save_dataframe(audit_detail, forecast_dir / "backtest_predictions.csv")
+    _save_dataframe(audit, forecast_dir / "backtest_scorecard.csv")
+    _save_dataframe(scenario_summary, output_dir / "scenarios" / "commercial_scenarios.csv")
+    _save_dataframe(scenario_brand_share, output_dir / "scenarios" / "brand_shares.csv")
+    write_dashboard(output_dir / "dashboard.html", pharma, supplements, forecasts,
+                    audit_detail, audit, diagnostics, correlation, scenario_summary)
 
     _save_dataframe(pharma, data_dir / "pharmaceutical_market.csv")
     _save_dataframe(supplements, data_dir / "companion_nutrition_market.csv")
@@ -130,5 +159,7 @@ def run_pipeline(config: ProjectConfig | None = None) -> dict[str, pd.DataFrame]
         "correlation": correlation,
         "forecasts": forecasts,
         "diagnostics": diagnostics,
+        "backtest": audit,
+        "scenarios": scenario_summary,
         **metrics,
     }

@@ -8,7 +8,7 @@ This project simulates monthly prescriptions for Ozempic, Wegovy, Mounjaro, and 
 
 ## Explore the dashboard
 
-Run the pipeline and open `outputs/dashboard.html` in a browser. The file works offline and includes three interactive views.
+Run the pipeline and open `outputs/dashboard.html` in a browser. The file works offline and includes three interactive views. You can also open a successful **Portfolio checks** run in the repository’s **Actions** tab, download the **glp1-market-lab** artifact, and open `dashboard.html` from the extracted folder.
 
 | View | Question it answers |
 | --- | --- |
@@ -16,7 +16,7 @@ Run the pipeline and open `outputs/dashboard.html` in a browser. The file works 
 | Forecast audit | Does SARIMAX beat the last observed value at the lead time I care about? How often do the intervals cover the simulated outcomes? |
 | Scenario explorer | How much of the difference from the base comes from more prescriptions, a shift between manufacturers, or a change in revenue per prescription? |
 
-![Synthetic brand share over time](outputs/figures/02_market_share_evolution.png)
+![Synthetic brand share over time](docs/assets/synthetic-brand-share.png)
 
 ## How I built it
 

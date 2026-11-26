@@ -59,8 +59,10 @@ caption {text-align:left;font-weight:bold}
 </div></section>
 <section id="medicaid" hidden><h2>Medicaid · quarterly prescription counts</h2>
 <p>This chart uses national Medicaid totals for the same four brands. It covers prescriptions reimbursed by Medicaid, a separate program from Medicare Part D.</p>
-<div id="sdud-chart"></div>
 <label>Inspect quarter <select id="sdud-period"></select></label>
+<p class="hint">The selected quarter is highlighted on the chart and detailed below.</p>
+<div id="sdud-chart"></div>
+
 <div id="sdud-table" class="scroller"></div>
 <p class="hint">A dash means no usable published count. If some package counts are hidden, the figure is the sum of the published counts only. Share is shown only when all four brands have published counts and their records have no hidden counts for that quarter.</p>
 <p><a id="sdud-download" download="medicaid.json">Download the data used here</a> · <a href="https://www.medicaid.gov/medicaid/prescription-drugs/state-drug-utilization-data">CMS State Drug Utilization Data</a></p>
@@ -129,7 +131,7 @@ function node(tag, attrs, label) {
   if (label !== undefined) item.textContent=label;
   return item;
 }
-function chart(id, title, dates, series, format, band, showPoints = false) {
+function chart(id, title, dates, series, format, band, showPoints = false, selectedIndex = -1) {
   const w=720,h=255,left=67,right=24,top=12,bottom=30;
   const values=series.flatMap(s=>s.values).concat(band ? band.high : []).filter(Number.isFinite);
   const max=Math.max(1e-6,...values)*1.06;
@@ -141,6 +143,11 @@ function chart(id, title, dates, series, format, band, showPoints = false) {
     const v=max*i/4;
     svg.append(node("line",{x1:left,x2:w-right,y1:y(v),y2:y(v),stroke:"#d6e1da"}));
     svg.append(node("text",{x:left-8,y:y(v)+4,"text-anchor":"end","font-size":12,fill:"#465e59"},format(v)));
+  }
+  if (selectedIndex >= 0) {
+    const selectedX = x(selectedIndex);
+    svg.append(node("line", {x1:selectedX, x2:selectedX, y1:top, y2:h-bottom,
+      stroke:"#244f42", "stroke-width":2, "stroke-dasharray":"4 3"}));
   }
   const marks=[0,Math.floor((dates.length-1)/2),dates.length-1];
   [...new Set(marks)].filter(i=>i>=0).forEach(i=>svg.append(node("text",
@@ -155,7 +162,16 @@ function chart(id, title, dates, series, format, band, showPoints = false) {
     s.values.forEach((v,i)=>{
       if(v==null){pen=false;return;}
       path+=(pen?" L":" M")+x(i)+" "+y(v);
-      if(showPoints) svg.append(node("circle",{cx:x(i),cy:y(v),r:4,fill:s.color}));
+      if (showPoints) {
+        const isSelected = i === selectedIndex;
+        const point = node("circle", {cx:x(i), cy:y(v), r:isSelected ? 6 : 4, fill:s.color});
+        if (isSelected) {
+          point.setAttribute("stroke", "#fff");
+          point.setAttribute("stroke-width", "2");
+          point.append(node("title", {}, s.label + ": " + v.toLocaleString("en-US") + " published prescriptions"));
+        }
+        svg.append(point);
+      }
       pen=true;
     });
     svg.append(node("path",{d:path,fill:"none",stroke:s.color,"stroke-width":2.5,
@@ -337,16 +353,17 @@ function renderMedicaid(source) {
   const brands = [...new Set(rows.map(row => row.brand))];
   const periods = [...new Set(rows.map(row => row.period))];
   el("medicaid").hidden = false;
-  chart("sdud-chart", "Published Medicaid prescription counts by quarter", periods,
-    brands.map((brand, index) => ({
-      label: brand,
-      color: colors[index],
-      values: periods.map(period => rows.find(row => row.brand === brand && row.period === period).fills)
-    })), compact, null, true);
+  const series = brands.map((brand, index) => ({
+    label: brand,
+    color: colors[index],
+    values: periods.map(period => rows.find(row => row.brand === brand && row.period === period).fills)
+  }));
   options("sdud-period", periods);
   el("sdud-period").value = rows.findLast(row => row.fills != null).period;
   function updateMedicaid() {
     const period = el("sdud-period").value;
+    chart("sdud-chart", "Published prescriptions · " + period + " highlighted",
+      periods, series, compact, null, true, periods.indexOf(period));
     table("sdud-table", period, ["Brand", "Published prescriptions", "Hidden package records", "Share of four brands"],
       rows.filter(row => row.period === period).map(row => [
         row.brand, row.fills == null ? "—" : row.fills.toLocaleString("en-US"),

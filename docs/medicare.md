@@ -11,3 +11,15 @@ The annual backtest uses only consecutive observations through the last finalize
 - [Health Canada semaglutide advisory, November 25, 2026](https://recalls-rappels.canada.ca/en/alert-recall/health-canada-warns-very-rare-serious-risk-vision-loss-semaglutide-drugs)
 
 The Canadian advisory is a regulatory event. Measuring any change in Canadian utilization would require comparable Canadian claims around the event and care in separating it from other changes.
+
+## Why the early years look different
+
+Ozempic and Mounjaro entered the U.S. market with type 2 diabetes indications. Wegovy and Zepbound initially entered with weight management indications, a use excluded by standard Part D. In 2024, Wegovy gained a cardiovascular indication and Zepbound gained a sleep apnea indication. Those uses are eligible for Part D coverage. The data do not identify which use generated a claim or why an individual field is missing.
+
+The dashboard also offers a comparison of Ozempic and Mounjaro. For each year where both have published fills, divide each brand’s fills by their combined total. This keeps the same two brands in the calculation across years. The original four brand share uses a different total and is shown separately. Neither measure represents the entire U.S. market.
+
+- [FDA approval history](https://www.fda.gov/media/175358/download)
+- [CMS background on Part D coverage for weight management drugs](https://public-inspection.federalregister.gov/2024-27939.pdf)
+- [CMS examples of Part D coverage by indication](https://www.cms.gov/files/document/medicare-glp-1-bridge-expectations-faqs.pdf)
+
+Medicaid’s [State Drug Utilization Data](https://www.medicaid.gov/medicaid/prescription-drugs/state-drug-utilization-data) provide a separate quarterly view of prescriptions paid by Medicaid. They could support a separate comparison, with attention to differences in state coverage and small counts that CMS hides.

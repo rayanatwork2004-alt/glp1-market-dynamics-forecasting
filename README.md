@@ -1,67 +1,107 @@
 # GLP-1 Market Lab
 
-**A healthcare analytics project using public Medicare Part D claims to study prescription demand.**
-
-## What the Medicare data showed
-
-**Mounjaro accounted for 49% of Medicare Part D fills among the four brands I tracked from January to June 2026.** CMS reported about 7.1 million Mounjaro fills in that preliminary period. The share is for these four brands within Medicare Part D. Fills include refills and can cover different treatment uses.
-
-![Preliminary Medicare Part D fills across four brands from January to June 2026](docs/assets/medicare-fills.svg)
-
-I also tested two simple forecasts against published Ozempic counts. The trend forecast had **22.1% WAPE**, compared with **40.5%** for repeating the previous year. Lower WAPE means smaller misses relative to total fills. I had three annual tests, so I’d want more history before using the result to plan. [Medicare methods and sources](docs/medicare.md)
-
-This is my first healthcare analytics project. I combined what I learned in school with my own research into the pharmaceutical industry. An obesity market brief made me curious about what drives prescription demand. New treatments give patients more choices, and insurance coverage can affect which medicines they can get. I also wanted to explore whether growth in prescriptions could affect demand for related nutrition products.
-
-My main question was simple. If coverage or competition changes, what should I look at first to understand prescription demand?
-
-I use published Medicare Part D data to compare fills and spending for Ozempic, Wegovy, Mounjaro, and Zepbound and test simple forecasts where the annual history allows it. The dashboard also includes public U.S. benchmarks for reported Wegovy volume, Foundayo affordability, and clinical trial results. A separate simulation uses 48 months of synthetic history to explore how changes in volume, share, and pricing could affect a forecast. The companion nutrition response is an assumption in that simulation and would need independent sales data to test.
-
-## Explore the dashboard
+**My first healthcare analytics project, exploring prescription trends for Ozempic, Wegovy, Mounjaro, and Zepbound.**
 
 **[Open the interactive dashboard](https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/?v=interaction-review)**
 
-Start with **Medicare Part D** for published fills, spending, and the annual forecast test. The simulation is a separate exercise.
+An obesity market brief got me interested in how new medicines, insurance coverage, and competition shape prescription demand. This project brings together what I learned in business school and my own research into the pharmaceutical industry.
 
-| View | Question it answers |
+## What the real data showed
+
+**Mounjaro accounted for 49% of reported fills among the four brands in Medicare Part D from January to June 2026**, or about 7.1 million fills.
+
+Medicare Part D is a U.S. prescription insurance program. These preliminary CMS figures may be revised. Fills include refills and can cover different treatment uses.
+
+![Preliminary Medicare Part D fills across four brands from January to June 2026](docs/assets/medicare-fills.svg)
+
+I also tested whether two simple methods could predict the next year of published Ozempic fills.
+
+| Forecast method | Error score |
 | --- | --- |
-| Medicare Part D (Prescription Drug Coverage) | How have real fills and spending changed for four selected brands, and how well do simple forecasts track them? |
-| Medicaid | How did published quarterly prescription counts change across the same four brands in a separate public program? |
-| Canada context | What does the new Canadian semaglutide advisory tell us, and what evidence would we need to study its effects? |
-| U.S. market benchmarks | What do real prescription volume estimates, published patient costs, and trial results tell us about competition and access? |
-| Simulated market overview | Which brands gained share within this panel, and which manufacturers own them? |
-| Forecast audit | Does SARIMAX beat the last observed value for the month I’m trying to predict? How often does the forecast range contain the simulated result? |
-| Scenario explorer | How much of the difference from the base comes from more prescriptions, a shift between manufacturers, or a change in revenue per prescription? |
+| Repeat the previous year's fills | 40.5% |
+| Continue the earlier trend | 22.1% |
 
-## Simulation demo
+WAPE adds up the absolute forecast misses and divides by total actual fills. Lower is better. The trend method did better across three annual tests, which gives only limited evidence for planning.
+
+[See the Medicare methods and sources](docs/medicare.md)
+
+## Decisions behind the analysis
+
+**Bringing in real data.** I started with simulated data, then wanted findings tied to published prescription counts. I added Medicare and Medicaid data and kept the synthetic examples for practising forecasts and scenarios.
+
+**Keeping all four brands.** Gaps in the early Medicare data pushed me to investigate launch dates, coverage, and other sources. Adding Medicaid gave me another view of all four brands. Each program has its own section because coverage and populations differ.
+
+**Leaving gaps visible.** Missing values raised questions I could investigate. I keep those counts blank and calculate share only when the required figures are available.
+
+## Where to start in the dashboard
+
+| View | What to look for |
+| --- | --- |
+| Medicare Part D | Reported fills, spending, and annual forecast checks |
+| Medicaid | Quarterly counts for the four brands |
+| Canada context | A safety advisory and questions for further research |
+| U.S. market benchmarks | Published prescription, patient cost, and clinical figures |
+| Simulated market | Synthetic volume and share |
+| Forecast audit | Forecast checks using synthetic data |
+| Scenario explorer | Synthetic coverage, competition, and pricing assumptions |
+
+Start with Medicare and Medicaid, then explore the synthetic examples. Each source covers a particular population and period.
+
+## Why I look at volume and share together
+
+In the **synthetic example**, Wegovy fills rose from 972,443 in October 2025 to 992,972 in November. Its share fell from 28.4% to 26.1% because the combined volume of the four brands grew faster.
+
+That is a useful business question to bring to real data. If a brand loses share, are its own prescriptions falling, or are competitors growing faster?
+
+<details>
+<summary>See the synthetic example chart</summary>
 
 ![Synthetic brand share over time](docs/assets/synthetic-brand-share.png)
 
-In the simulation, Wegovy prescriptions rose from **972,443 in October 2025** to **992,972 in November**, while its share of the four brands fell from **28.4% to 26.1%**. The panel grew faster than Wegovy did. If I only looked at share, I’d miss that Wegovy’s prescription volume actually went up.
+</details>
 
-## How I built it
+## How I checked the synthetic forecast
 
-- **Real claims.** I use the published total for each brand. The annual figures let me compare full years. I show newer figures separately because they can be revised and may cover only part of a year. I calculate share only when all four brands have reported fills. Where I have enough history, I test whether a simple trend predicts the next year better than repeating the previous year. [Medicare methods and sources](docs/medicare.md)
+SARIMAX is a time series model that uses earlier values and can account for recurring patterns. I compared it with repeating the latest month. Both methods predicted the same synthetic months using only earlier data.
 
-- **Market data.** I generate monthly prescription counts, prices, and sales for the simulation. Months before a brand enters the simulated market count as zero for market share. I start training the forecast when the brand enters.
-- **Forecast validation.** I use SARIMAX to forecast each brand from its own simulated history. I hide later months, make a forecast, and compare it with a simple guess that repeats the latest month. I check how far each guess was off, whether it tended to predict too high or too low, and how often the answer fell inside the forecast range. [Forecast methods](docs/methodology.md)
-- **Commercial scenarios.** I separate changes in total prescriptions from shifts between manufacturers and changes in synthetic gross revenue per prescription. This lets a reader see how rising volume and falling revenue per prescription can pull in different directions. I choose how strongly simulated nutrition sales respond to a prescription change and how long that response takes.
-- **Research boundaries.** The nutrition relationship was built into the simulation. Comparing levels with monthly changes helps explain why two upward trends can look related. Neither correlation establishes a real commercial effect. The model uses aggregate synthetic records and contains no patient data.
+Some newer brands have only one test month at a selected lead time. That gives little evidence about future reliability. The dashboard shows how many months were tested.
 
-## How the simulated forecast performed
+<details>
+<summary>See the forecast scores and technical details</summary>
 
-The synthetic forecast audit is a methods exercise with limited evidence for newer brands. For Zepbound, SARIMAX had 0.3% WAPE at three months ahead and 21.6% at six months, compared with 30.6% and 39.5% for the last value baseline. Each comparison used only one simulated test month. Those scores describe that single test and give little evidence about future reliability. The dashboard shows the number of distinct test months beside each selection.
+For synthetic Zepbound prescriptions, each row represents one test month for each method.
 
-## What I’d ask for on day one
+| Months ahead | SARIMAX WAPE | Repeat latest month WAPE |
+| --- | --- | --- |
+| 3 | 0.3% | 30.6% |
+| 6 | 21.6% | 39.5% |
 
-- **Monthly prescription fills by brand** to test the forecast against real dispensing data.
-- **Insurer coverage change dates** to check whether fill patterns shifted afterward and what else changed at the same time.
-- **Independent nutrition sales** to see whether actual purchases show the kind of lag I simulated.
+The audit also checks the size and direction of forecast misses, prediction ranges, and whether the model fitted successfully.
 
-## Run locally
+[Read the forecasting methods](docs/methodology.md)
 
-The default local build includes the simulation. GitHub Actions includes both public claims panels automatically. For a local build with public claims, run `python -m glp1_market.medicare` and `python -m glp1_market.medicaid` after installation. Set `GLP1_MEDICARE_DATA=.cache/medicare.json` and `GLP1_MEDICAID_DATA=.cache/medicaid.json` in your shell before running the pipeline.
+</details>
 
-Run the pipeline and open `outputs/dashboard.html` in a browser. The dashboard also works offline. You can also open a successful **Portfolio checks** run in the repository’s **Actions** tab, download the **glp1-market-lab** artifact, and open `dashboard.html` from the extracted folder.
+## What would make the analysis stronger
+
+- **More frequent real prescription data** to test forecasts on more periods.
+- **Dates of insurance coverage changes** to investigate changes in fills alongside other events.
+- **Independent nutrition sales data** to test the relationship assumed in the simulation.
+
+The nutrition example uses an assumed response to prescription growth. It needs real sales data before it can support a commercial recommendation. The analysis uses public aggregate counts and synthetic records.
+
+## Project files
+
+The Python modules are in [src/glp1_market](src/glp1_market). The [methods](docs/methodology.md), [public data notes](docs/medicare.md), and [data dictionary](docs/data_dictionary.md) explain the calculations and sources.
+
+GitHub checks the Python code and opens the generated dashboard in a browser to check its controls, downloads, keyboard input, and mobile layout before publishing.
+
+<details>
+<summary>Run the project locally</summary>
+
+The default local build includes the simulation. The live dashboard also includes both public claims panels.
+
+Clone the repository and create a Python environment.
 
 ```bash
 git clone https://github.com/rayanatwork2004-alt/glp1-market-dynamics-forecasting.git
@@ -69,7 +109,9 @@ cd glp1-market-dynamics-forecasting
 python -m venv .venv
 ```
 
-Activate the environment with `.\.venv\Scripts\Activate.ps1` on Windows PowerShell or `source .venv/bin/activate` on macOS or Linux.
+Activate the environment with `.\.venv\Scripts\Activate.ps1` in Windows PowerShell, or `source .venv/bin/activate` on macOS or Linux.
+
+Install the package, run the pipeline, and run the Python tests.
 
 ```bash
 python -m pip install -e ".[dev]"
@@ -77,7 +119,20 @@ python run_pipeline.py
 python -m pytest
 ```
 
-The pipeline saves the interactive dashboard, the original static charts, and CSVs for the forecast scores, predictions, and scenarios. The Python package lives in [src/glp1_market](src/glp1_market), with the method and metric definitions in [docs](docs).
+Open `outputs/dashboard.html` in your browser. The pipeline also saves static charts and CSV files containing forecasts, scores, and scenario results.
 
+To include the public claims panels locally, run these commands after installation. The environment variable commands below use Windows PowerShell.
 
-GitHub Actions also opens the generated dashboard in Chromium and checks the selectors, moving period markers, visible forecast points, downloads, keyboard controls, and mobile layout. Publication waits for those checks to pass.
+```powershell
+python -m glp1_market.medicare
+python -m glp1_market.medicaid
+$env:GLP1_MEDICARE_DATA = ".cache/medicare.json"
+$env:GLP1_MEDICAID_DATA = ".cache/medicaid.json"
+python run_pipeline.py
+```
+
+On macOS or Linux, use `export GLP1_MEDICARE_DATA=.cache/medicare.json` and `export GLP1_MEDICAID_DATA=.cache/medicaid.json` to set the same variables.
+
+A successful **Portfolio checks** run in GitHub's **Actions** tab also provides a **glp1-market-lab** download. Extract it and open `dashboard.html` to view that build offline.
+
+</details>

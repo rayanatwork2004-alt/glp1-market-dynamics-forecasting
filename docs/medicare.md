@@ -22,7 +22,7 @@ Ozempic and Mounjaro entered the U.S. market with type 2 diabetes indications. W
 - [CMS background on Part D coverage for weight management drugs](https://public-inspection.federalregister.gov/2024-27939.pdf)
 - [CMS examples of Part D coverage by indication](https://www.cms.gov/files/document/medicare-glp-1-bridge-expectations-faqs.pdf)
 
-Medicaid’s [State Drug Utilization Data](https://www.medicaid.gov/medicaid/prescription-drugs/state-drug-utilization-data) provide a separate quarterly view of prescriptions paid by Medicaid. They could support a separate comparison, with attention to differences in state coverage and small counts that CMS hides.
+The Medicaid section uses [State Drug Utilization Data](https://www.medicaid.gov/medicaid/prescription-drugs/state-drug-utilization-data) for a quarterly view of the same four brands. It adds published national package counts for each brand and reports how many package records have hidden counts. When some counts are hidden, the published sum can understate the full total. The dashboard shows share only when all four brands have usable counts and no hidden package counts in that quarter. Medicare and Medicaid use different populations and coverage rules, so each program has its own view.
 
 ## Other public evidence
 

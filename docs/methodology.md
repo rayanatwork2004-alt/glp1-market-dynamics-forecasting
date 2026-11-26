@@ -21,7 +21,7 @@ Monthly and annual market share are calculated from TRx. HHI is the sum of squar
 
 ## Forecasting
 
-Segment forecasts use SARIMAX on `log1p` transformed values. Structural pre-launch zeroes are removed before model fitting. I try a small set of model settings because each series has only 26 to 48 months of data after launch. Among the models that fit successfully, I choose the one with the lowest AIC, a score that balances fit with model complexity. I use it to forecast 24 months and calculate prediction ranges.
+Segment forecasts use SARIMAX on `log1p` transformed values. Structural pre-launch zeroes are removed before model fitting. I try a small set of model settings because each series has only 26 to 48 months of data after launch. Among the models that fit successfully, I choose the one with the lowest AIC, a score that balances fit with model complexity. The pipeline exports 24 months of forecasts and prediction ranges. The dashboard displays the selected 1, 3, or 6 months ahead alongside the test results for that horizon.
 
 To estimate gross revenue, I multiply each brand’s forecast prescriptions by its average simulated revenue per prescription over the previous 12 months. Companion nutrition revenue is forecast directly.
 

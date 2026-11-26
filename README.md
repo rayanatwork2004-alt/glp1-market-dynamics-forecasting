@@ -2,7 +2,9 @@
 
 **A healthcare analytics portfolio project on brand competition, forecast reliability, and companion nutrition.**
 
-I wanted to answer a question a commercial analyst might get after presenting a forecast: if access or competition changes, which part of the forecast should we revisit first?
+This is my first healthcare analytics project. I brought together what I learned in school and what I was learning on my own about the pharmaceutical industry. An obesity market brief shared by someone working in pharma helped me decide which questions to explore, especially around competition, insurance coverage, and companion nutrition.
+
+I started with one question. If access or competition changes, which part of the prescription forecast should I revisit first?
 
 This project simulates monthly prescriptions for Ozempic, Wegovy, Mounjaro, and Zepbound, alongside three companion nutrition categories. It uses 48 months of synthetic history from January 2022 to December 2025 and projects 24 months through December 2027. The forecasts, historical inputs, and scenario results are synthetic. The dashboard also includes [public U.S. benchmarks](https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/#evidence) for reported Wegovy volume, Foundayo affordability, and clinical trial results. Each benchmark links to its source. The four brands define the modeled panel. The data do not distinguish individual indications or count unique patients.
 
@@ -10,7 +12,7 @@ This project simulates monthly prescriptions for Ozempic, Wegovy, Mounjaro, and 
 
 **[Open the live dashboard](https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/)**
 
-Run the pipeline and open `outputs/dashboard.html` in a browser. The file works offline and includes three interactive views. You can also open a successful **Portfolio checks** run in the repository’s **Actions** tab, download the **glp1-market-lab** artifact, and open `dashboard.html` from the extracted folder.
+Run the pipeline and open `outputs/dashboard.html` in a browser. The dashboard also works offline. You can also open a successful **Portfolio checks** run in the repository’s **Actions** tab, download the **glp1-market-lab** artifact, and open `dashboard.html` from the extracted folder.
 
 | View | Question it answers |
 | --- | --- |
@@ -52,4 +54,3 @@ python -m pytest
 
 The pipeline saves the interactive dashboard, the original static charts, and CSVs for the scorecard, individual held out predictions and commercial scenarios. The Python package lives in [src/glp1_market](src/glp1_market), with the method and metric definitions in [docs](docs).
 
-The forecast comparison reflects the methods I wanted to practice from ADM 4307. The research framing, data limitations and access questions reflect the healthcare management lens I wanted to bring from ADM 4364. [Telfer Healthcare Analytics](https://telfer.uottawa.ca/en/bcom/your-program-of-study/program-structure/healthcare-analytics/)

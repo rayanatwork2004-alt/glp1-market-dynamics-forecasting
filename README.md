@@ -8,6 +8,8 @@ This project simulates monthly prescriptions for Ozempic, Wegovy, Mounjaro, and 
 
 ## Explore the dashboard
 
+**[Open the live dashboard](https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/)**
+
 Run the pipeline and open `outputs/dashboard.html` in a browser. The file works offline and includes three interactive views. You can also open a successful **Portfolio checks** run in the repository’s **Actions** tab, download the **glp1-market-lab** artifact, and open `dashboard.html` from the extracted folder.
 
 | View | Question it answers |

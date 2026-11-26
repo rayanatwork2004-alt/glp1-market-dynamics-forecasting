@@ -35,19 +35,19 @@ caption {text-align:left;font-weight:bold}
 </head>
 <body>
 <header><small>Healthcare analytics portfolio · Public benchmarks and synthetic forecasts</small><h1>GLP-1 Market Lab</h1>
-<p>Explore how prescriptions are distributed across four brands, how well the forecasts hold up, and what happens when commercial assumptions change.</p></header>
+<p>See what people filled, compare simple forecasts, and explore what could happen if coverage or competition changes.</p></header>
 <main>
 <nav aria-label="Dashboard sections"><a href="#medicare">Medicare Part D</a><a href="#canada">Canada context</a><a href="#evidence">U.S. market benchmarks</a><a href="#market">Simulated market</a><a href="#forecast">Forecast audit</a><a href="#scenario">Scenario explorer</a></nav>
 <section id="medicare"><h2>Real prescription fills · U.S. Medicare Part D</h2>
-<p>Compare reported fills and gross spending for Ozempic, Wegovy, Mounjaro and Zepbound. Fills include refills. Gross spending is before manufacturer rebates. The published brand totals can include more than one treatment indication.</p>
+<p>Compare reported fills and gross spending for Ozempic, Wegovy, Mounjaro and Zepbound. Fills include refills. Gross spending is before manufacturer rebates. The totals can include prescriptions for different health conditions.</p>
 <p id="cms-offline" class="hint">The public claims panel is included in the <a href="https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/#medicare">live dashboard</a>.</p>
 <div id="cms-content" hidden>
 <div class="controls"><label>Annual chart <select id="cms-metric"><option value="fills">Prescription fills</option><option value="spending">Gross spending</option><option value="share">Share of four brands</option></select></label>
 <label>Inspect period <select id="cms-period"></select></label></div>
 <div id="cms-chart"></div><div id="cms-table" class="scroller"></div>
-<p class="hint">Dash means no usable published value. Share is shown only when all four brands have reported fills in the same period. Preliminary releases may be revised and can cover several quarters, so they are shown in the period table and kept out of the annual chart and backtest.</p>
+<p class="hint">A dash means a figure is missing or can’t be used. I show share only when all four brands have reported fills for the same period. Newer figures may change and can cover only part of a year. You’ll find them in the period table.</p>
 <h3>Could a simple forecast track the real counts?</h3>
-<p class="hint">At each test, forecast one year ahead using only earlier annual observations. Last value repeats the previous year. Trend adds the average annual change since the first usable year. A brand needs five consecutive years for this check, with two years to start and at least three years to test. This is an exploratory comparison on a short series.</p>
+<p class="hint">For each test, I hide a year of data and predict its fills using earlier years. Last value repeats the previous year. Trend adds the average annual change so far. I require five years in a row so I can start with two years and test at least three predictions.</p>
 <div id="cms-audit" class="scroller"></div><div id="cms-trials" class="scroller"></div>
 <p id="cms-coverage" class="hint"></p>
 <p><a href="medicare.json" id="cms-data-download" download>Download the Medicare data and backtest results</a> · <a href="https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-medicaid-spending-by-drug/medicare-part-d-spending-by-drug/">CMS annual source</a> · <a href="https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-medicaid-spending-by-drug/medicare-quarterly-part-d-spending-by-drug">CMS preliminary source</a></p>
@@ -85,10 +85,10 @@ caption {text-align:left;font-weight:bold}
 <div class="controls"><label>Segment <select id="segment"></select></label><label>Months ahead <select id="horizon"><option>1</option><option selected>3</option><option>6</option></select></label></div>
 <div id="forecast-chart"></div><div id="held-out"></div><div id="audit" class="scroller" aria-live="polite"></div><p id="diagnostics" class="hint"></p>
 <p class="hint">WAPE is total absolute error divided by total observed volume or sales. Positive bias means overforecasting. Coverage is the share of held out observations inside each prediction interval. With few observations, coverage can swing sharply. The 24 month view extends beyond the tested horizons.</p></section>
-<section id="scenario"><h2>Scenario explorer · synthetic assumptions</h2><p class="hint">Compare hypothetical business conditions with the statistical base forecast. Payer coverage means whether and under what conditions an insurer pays for a treatment.</p>
+<section id="scenario"><h2>Scenario explorer · synthetic assumptions</h2><p class="hint">Compare what might happen under different insurance and pricing assumptions. Base is the forecast before those changes. Payer coverage means what an insurer will pay for and under which conditions.</p>
 <label>Commercial assumption <select id="case"></select></label>
 <p id="assumptions" aria-live="polite"></p><div id="scenario-cards" class="grid"></div><div id="scenario-chart"></div>
-<p class="hint">The nutrition response is a simulation assumption. The gross figure applies synthetic revenue per prescription and excludes rebates and actual net pricing. Manufacturer HHI measures concentration within this four brand panel on a 0 to 10,000 scale.</p></section>
+<p class="hint">Nutrition sales respond according to the assumptions in this example. Gross revenue uses a simulated price per prescription before rebates. The concentration score (HHI) shows how much of the prescription volume is concentrated among manufacturers in this example. A higher score means fewer companies account for more of the volume.</p></section>
 <section><h2>What I’d check next</h2><p>I’d use prescription and coverage data to check whether a change came from more demand or a shift between brands. For nutrition, I’d test the assumed lag with independent sales data before using it to plan inventory.</p>
 <p id="lag-note" class="hint"></p></section></main>
 <script type="application/json" id="data">__PIPELINE_DATA__</script>
@@ -292,11 +292,11 @@ function renderMedicare(cms) {
   if (scores.length) {
     table("cms-audit","Annual backtest scorecard",
       ["Brand","Model","Test years","Average absolute miss (fills)","WAPE"], scores);
-    table("cms-trials","The held out answers and both forecasts",
+    table("cms-trials","Actual fills and both forecasts",
       ["Brand","Test year","Actual fills","Last value forecast","Trend forecast"],
       cms.trials.map(row => [row.brand,row.period,count(row.actual),count(row.last),count(row.drift)]));
   }
-  el("cms-coverage").textContent = "Usable consecutive annual history through " + years.at(-1) + " · " +
+  el("cms-coverage").textContent = "Years in a row with published fills through " + years.at(-1) + " · " +
     cms.eligibility.map(row => row.brand + ": " + row.years + (row.years === 1 ? " year" : " years")).join(" · ") + ".";
   const file = new Blob([JSON.stringify(cms, null, 2)], {type:"application/json"});
   el("cms-data-download").href = URL.createObjectURL(file);

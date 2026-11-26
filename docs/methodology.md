@@ -2,18 +2,18 @@
 
 ## Synthetic data design
 
-The simulation is intentionally deterministic under a configured random seed. Pharmaceutical volume combines brand-specific compound monthly growth, saturation, seasonality, and Gaussian noise. NRx is sampled within a brand-specific 25%-35% range of TRx. Later entrants retain pre-launch zero observations so the market remains a balanced panel.
+The simulation uses a fixed random seed so the same settings produce the same numbers. Pharmaceutical volume combines monthly growth that varies by brand, slower growth as adoption increases, seasonal patterns, and random variation. NRx is sampled within a brand-specific 25%-35% range of TRx. Brands that enter later have zero prescriptions in the months before launch so every brand has the same calendar.
 
 Companion nutrition demand is generated from lagged total GLP-1 TRx, cumulative class exposure, category-specific capture rates, organic category growth, seasonality, pricing inflation, and Gaussian noise. The default configuration deliberately places the strongest lead-lag signal at a two-month TRx lead.
 
-## Lead-lag validation
+## Timing of the nutrition response
 
-Two correlations are persisted across candidate lags:
+I calculate two correlations at different time gaps:
 
-- **Levels:** shows cross-market co-movement, but can be inflated when both markets trend upward.
-- **First difference:** compares month-to-month changes and is therefore a stricter diagnostic against purely trend-driven correlation.
+- **Levels:** shows how the two series move together. If both grow over time, the correlation can look stronger.
+- **First difference:** compares changes from one month to the next to see if the relationship still appears after removing much of the overall trend.
 
-In the default seeded simulation, both diagnostics identify the engineered two-month adoption lag.
+In the default simulation, both measures pick up the two month delay built into the data.
 
 ## Commercial metrics
 
@@ -21,9 +21,9 @@ Monthly and annual market share are calculated from TRx. HHI is the sum of squar
 
 ## Forecasting
 
-Segment forecasts use SARIMAX on `log1p` transformed values. Structural pre-launch zeroes are removed before model fitting. A compact candidate grid is used rather than exhaustive hyperparameter search because each series has only 26-48 post-launch monthly observations. The lowest-AIC converged candidate is refit and used for a 24-month forecast with 95% model-based intervals.
+Segment forecasts use SARIMAX on `log1p` transformed values. Structural pre-launch zeroes are removed before model fitting. I try a small set of model settings because each series has only 26 to 48 months of data after launch. Among the models that fit successfully, I choose the one with the lowest AIC, a score that balances fit with model complexity. I use it to forecast 24 months and calculate prediction ranges.
 
-Pharmaceutical gross-revenue projections for the executive dual-axis chart are an **implied scenario**, obtained by applying each brand's trailing-12-month mean synthetic revenue-per-TRx to its TRx forecast. Companion nutrition revenue is forecast directly.
+To estimate gross revenue, I multiply each brand’s forecast prescriptions by its average simulated revenue per prescription over the previous 12 months. Companion nutrition revenue is forecast directly.
 
 ## Interpretation boundaries
 

@@ -16,10 +16,14 @@ The Canadian advisory is a regulatory event. Measuring any change in Canadian ut
 
 Ozempic and Mounjaro entered the U.S. market with type 2 diabetes indications. Wegovy and Zepbound initially entered with weight management indications, a use excluded by standard Part D. In 2024, Wegovy gained a cardiovascular indication and Zepbound gained a sleep apnea indication. Those uses are eligible for Part D coverage. The data do not identify which use generated a claim or why an individual field is missing.
 
-The dashboard also offers a comparison of Ozempic and Mounjaro. For each year where both have published fills, divide each brand’s fills by their combined total. This keeps the same two brands in the calculation across years. The original four brand share uses a different total and is shown separately. Neither measure represents the entire U.S. market.
+
 
 - [FDA approval history](https://www.fda.gov/media/175358/download)
 - [CMS background on Part D coverage for weight management drugs](https://public-inspection.federalregister.gov/2024-27939.pdf)
 - [CMS examples of Part D coverage by indication](https://www.cms.gov/files/document/medicare-glp-1-bridge-expectations-faqs.pdf)
 
 Medicaid’s [State Drug Utilization Data](https://www.medicaid.gov/medicaid/prescription-drugs/state-drug-utilization-data) provide a separate quarterly view of prescriptions paid by Medicaid. They could support a separate comparison, with attention to differences in state coverage and small counts that CMS hides.
+
+## Other public evidence
+
+The dashboard includes a separate retail benchmark from [the ISPOR research poster](https://www.ispor.org/docs/default-source/cti-meeting-21021-documents/6fe2eb97-d003-4dc0-b6d0-812e13795055.pdf). The poster reports shares across all four brands for January 2023 through October 2024 as a single study period. Those shares are not spliced into the Medicare series or used for forecasting. A [study of semaglutide fills by payment method](https://pmc.ncbi.nlm.nih.gov/articles/PMC11297375/) also documents early Wegovy retail fills, many of which were paid for by commercial insurance.

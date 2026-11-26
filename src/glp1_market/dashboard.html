@@ -42,7 +42,7 @@ caption {text-align:left;font-weight:bold}
 <p>Compare reported fills and gross spending for Ozempic, Wegovy, Mounjaro and Zepbound. Fills include refills. Gross spending is before manufacturer rebates. The totals can include prescriptions for different health conditions.</p>
 <p id="cms-offline" class="hint">The public claims panel is included in the <a href="https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/#medicare">live dashboard</a>.</p>
 <div id="cms-content" hidden>
-<div class="controls"><label>Annual chart <select id="cms-metric"><option value="fills">Prescription fills</option><option value="spending">Gross spending</option><option value="share">Share of four brands</option><option value="pair">Shares of Ozempic and Mounjaro only</option></select></label>
+<div class="controls"><label>Annual chart <select id="cms-metric"><option value="fills">Prescription fills</option><option value="spending">Gross spending</option><option value="share">Share of four brands</option></select></label>
 <label>Inspect period <select id="cms-period"></select></label></div>
 <div id="cms-chart"></div><p id="cms-chart-note" class="hint" aria-live="polite"></p><div id="cms-table" class="scroller"></div>
 <p class="hint">A dash means a figure is missing or can’t be used. I show share only when all four brands have reported fills for the same period. Newer figures may change and can cover only part of a year. You’ll find them in the period table.</p>
@@ -50,6 +50,7 @@ caption {text-align:left;font-weight:bold}
 <p>Ozempic was approved for type 2 diabetes in 2017. Mounjaro was approved for type 2 diabetes in 2022. Wegovy and Zepbound were first approved for weight management in 2021 and 2023, respectively. Standard Medicare Part D excluded drugs when used for weight loss. In 2024, Wegovy gained a cardiovascular indication and Zepbound gained a sleep apnea indication, which made those uses eligible for Part D coverage.</p>
 <p>The data show brand totals across covered uses. They don’t tell us why any particular cell is blank. CMS can hide very small counts, so blank values stay missing. <a href="https://www.fda.gov/media/175358/download">FDA approval history</a> · <a href="https://public-inspection.federalregister.gov/2024-27939.pdf">CMS coverage background</a> · <a href="https://www.cms.gov/files/document/medicare-glp-1-bridge-expectations-faqs.pdf">CMS coverage by indication</a></p>
 </details>
+<p class="hint">For a wider U.S. retail comparison of all four brands, see <a href="#retail-benchmark">What other U.S. data show</a>.</p>
 <h3>Could a simple forecast track the real counts?</h3>
 <p class="hint">For each test, I hide a year of data and predict its fills using earlier years. Last value repeats the previous year. Trend adds the average annual change so far. I require five years in a row so I can start with two years and test at least three predictions.</p>
 <div id="cms-audit" class="scroller"></div><div id="cms-trials" class="scroller"></div>
@@ -62,6 +63,12 @@ caption {text-align:left;font-weight:bold}
 <p class="hint">The study question is whether Canadian fills changed after the advisory. That takes comparable Canadian data before and after November 25, along with other events such as coverage or supply changes. U.S. Medicare fills cannot answer that question.</p></section>
 <section id="evidence"><h2>U.S. market benchmarks</h2>
 <p class="hint">Published figures on prescription volume, patient costs and clinical research. These benchmarks provide context for the simulation below. They use different populations, units and time periods.</p>
+<h3 id="retail-benchmark">What other U.S. data show</h3>
+<p>An IQVIA analysis presented at ISPOR compared all four brands in the U.S. retail prescription market. Its poster reports 88.2 million prescriptions across the four brands from January 2023 through October 2024. These are shares of the four brands over the full study period. Zepbound entered late in 2023, so it had less time in the study. <a href="https://www.ispor.org/docs/default-source/cti-meeting-21021-documents/6fe2eb97-d003-4dc0-b6d0-812e13795055.pdf">ISPOR research poster</a></p>
+<div class="scroller"><table><caption>Share of prescriptions across the four studied brands</caption>
+<thead><tr><th scope="col">Ozempic</th><th scope="col">Mounjaro</th><th scope="col">Wegovy</th><th scope="col">Zepbound</th></tr></thead>
+<tbody><tr><td>52%</td><td>29%</td><td>14%</td><td>5%</td></tr></tbody></table></div>
+<p>A separate study tracked Wegovy retail fills from July 2021 and found that commercial insurance paid for most of its fills overall during the 2021 to 2023 study period. That helps explain why a Medicare blank can coexist with prescriptions elsewhere. The retail studies use different populations and periods from the Medicare data, so their results are shown separately. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11297375/">Study of fills by payment method</a></p>
 <div id="reported-volume"></div><div id="reported-volume-values" class="scroller"></div>
 <p class="hint">Wegovy injection and pill combined, as shown in Novo Nordisk’s quarterly investor presentation. The totals are rounded company estimates for one franchise. <a href="https://www.novonordisk.com/content/dam/nncorp/global/en/investors/pdfs/financial-results/2026/Q3-2026-Full-presentation.pdf#page=10">Novo Nordisk Q3 2026 presentation, slide 10</a></p>
 <h3>One month of U.S. patient cost</h3>
@@ -263,38 +270,26 @@ function renderMedicare(cms) {
   }
   options("cms-period", [...periods.keys()]);
   el("cms-period").value = [...periods.keys()].at(-1);
-  const pair = ["Ozempic","Mounjaro"];
   const shares = value => value > 0 && value < 0.001 ? "<0.1%" : pct(value);
   const metricLabels = {fills:"Prescription fills", spending:"Gross spending (USD)",
-    share:"Share of the four brands", pair:"Share of Ozempic and Mounjaro combined"};
+    share:"Share of the four brands"};
   const count = n => n == null ? "—" : Math.round(n).toLocaleString("en-US");
   const dollars = n => n == null ? "—" : "$" + count(n);
   function updateMedicareChart() {
     const metric = el("cms-metric").value;
-    const selected = metric === "pair" ? pair : brands;
-    const series = selected.map(brand => ({
-      label: brand, color: colors[brands.indexOf(brand)],
-      values: years.map(year => {
-        const rows = periods.get(year);
-        const row = rows.find(item => item.brand === brand);
-        if (metric !== "pair") return row[metric];
-        const matched = rows.filter(item => pair.includes(item.brand));
-        if (matched.length !== pair.length || matched.some(item => item.fills == null)) return null;
-        const combined = total(matched, "fills");
-        return combined ? row.fills / combined : null;
-      }),
+    const series = brands.map((brand, i) => ({
+      label: brand, color: colors[i],
+      values: years.map(year => periods.get(year).find(row => row.brand === brand)[metric]),
     }));
     const shown = years.filter((year, i) => series.some(line => line.values[i] != null));
-    el("cms-chart-note").textContent = metric === "pair"
-      ? "Both brands reported fills in " + shown.join(", ") + ". Shares use only these two brands. The table below still shows share of all four brands."
-      : metric === "share"
-        ? "All four brands reported fills in " + shown.join(", ") + ". Earlier years have an incomplete total."
-        : "Lines start at the first usable published value. They leave gaps where figures are unavailable.";
+    el("cms-chart-note").textContent = metric === "share"
+      ? "All four brands reported fills in " + shown.join(", ") + ". Earlier years have an incomplete total."
+      : "Lines start at the first usable published value. They leave gaps where figures are unavailable.";
     if (series.every(line => line.values.every(value => value == null))) {
       el("cms-chart").textContent = "No comparable annual values for this measure.";
       return;
     }
-    const format = {fills: compact, spending: money, share: pct, pair: pct}[metric];
+    const format = {fills: compact, spending: money, share: pct}[metric];
     chart("cms-chart", metricLabels[metric] + " · finalized annual data", years, series, format, null, true);
   }
   function updateMedicarePeriod() {

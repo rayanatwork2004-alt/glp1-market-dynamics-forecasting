@@ -26,9 +26,12 @@ jobs:
       - run: python -m pytest
       - name: Build Medicare Part D panel
         run: python -m glp1_market.medicare
+      - name: Build Medicaid prescription panel
+        run: python -m glp1_market.medicaid
       - run: python run_pipeline.py
         env:
           GLP1_MEDICARE_DATA: .cache/medicare.json
+          GLP1_MEDICAID_DATA: .cache/medicaid.json
       - name: Prepare public dashboard
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.event.repository.has_pages && !github.event.repository.private
         run: |

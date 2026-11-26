@@ -27,6 +27,13 @@ def write_dashboard(path, pharma, supplements, forecasts, detail, audit, diagnos
         (path.parent / "medicare.json").write_text(
             json.dumps(data["medicare"], indent=2, allow_nan=False), encoding="utf-8"
         )
+    medicaid_path = os.environ.get("GLP1_MEDICAID_DATA")
+    if medicaid_path:
+        claims = json.loads(Path(medicaid_path).read_text(encoding="utf-8"))
+        data["medicaid"] = claims
+        (path.parent / "medicaid.json").write_text(
+            json.dumps(claims, indent=2, allow_nan=False), encoding="utf-8"
+        )
     payload = json.dumps(data, allow_nan=False).replace("<", "\\u003c")
     template = files("glp1_market").joinpath("dashboard.html").read_text(encoding="utf-8")
     path.parent.mkdir(parents=True, exist_ok=True)

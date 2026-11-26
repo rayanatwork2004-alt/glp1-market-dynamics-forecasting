@@ -37,7 +37,7 @@ caption {text-align:left;font-weight:bold}
 <header><small>Healthcare analytics portfolio · Public benchmarks and synthetic forecasts</small><h1>GLP-1 Market Lab</h1>
 <p>See what people filled, compare simple forecasts, and explore what could happen if coverage or competition changes.</p></header>
 <main>
-<nav aria-label="Dashboard sections"><a href="#medicare">Medicare Part D</a><a href="#canada">Canada context</a><a href="#evidence">U.S. market benchmarks</a><a href="#market">Simulated market</a><a href="#forecast">Forecast audit</a><a href="#scenario">Scenario explorer</a></nav>
+<nav aria-label="Dashboard sections"><a href="#medicare">Medicare Part D</a><a href="#medicaid">Medicaid</a><a href="#canada">Canada context</a><a href="#evidence">U.S. market benchmarks</a><a href="#market">Simulated market</a><a href="#forecast">Forecast audit</a><a href="#scenario">Scenario explorer</a></nav>
 <section id="medicare"><h2>Real prescription fills · U.S. Medicare Part D</h2>
 <p>Compare reported fills and gross spending for Ozempic, Wegovy, Mounjaro and Zepbound. Fills include refills. Gross spending is before manufacturer rebates. The totals can include prescriptions for different health conditions.</p>
 <p id="cms-offline" class="hint">The public claims panel is included in the <a href="https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/#medicare">live dashboard</a>.</p>
@@ -57,6 +57,14 @@ caption {text-align:left;font-weight:bold}
 <p id="cms-coverage" class="hint"></p>
 <p><a href="medicare.json" id="cms-data-download" download>Download the Medicare data and backtest results</a> · <a href="https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-medicaid-spending-by-drug/medicare-part-d-spending-by-drug/">CMS annual source</a> · <a href="https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-medicaid-spending-by-drug/medicare-quarterly-part-d-spending-by-drug">CMS preliminary source</a></p>
 </div></section>
+<section id="medicaid" hidden><h2>Medicaid · quarterly prescription counts</h2>
+<p>This chart uses national Medicaid totals for the same four brands. It covers prescriptions reimbursed by Medicaid, a separate program from Medicare Part D.</p>
+<div id="sdud-chart"></div>
+<label>Inspect quarter <select id="sdud-period"></select></label>
+<div id="sdud-table" class="scroller"></div>
+<p class="hint">A dash means no usable published count. If some package counts are hidden, the figure is the sum of the published counts only. Share is shown only when all four brands have published counts and their records have no hidden counts for that quarter.</p>
+<p><a id="sdud-download" download="medicaid.json">Download the data used here</a> · <a href="https://www.medicaid.gov/medicaid/prescription-drugs/state-drug-utilization-data">CMS State Drug Utilization Data</a></p>
+</section>
 <section id="canada"><h2>Canada · safety and market context</h2>
 <p>On November 25, 2026, Health Canada published a safety review that found a possible link between prescription semaglutide and NAION, a very rare but serious condition involving vision loss. The review focused on semaglutide, which includes Ozempic and Wegovy. <a href="https://recalls-rappels.canada.ca/en/alert-recall/health-canada-warns-very-rare-serious-risk-vision-loss-semaglutide-drugs">Health Canada advisory</a></p>
 <p>Obesity Canada cites IQVIA estimates of about 350,000 Canadian prescriptions for obesity medications in 2020 and over 3.4 million in 2024. These are national estimates for a broader category. <a href="https://obesitycanada.ca/wp-content/uploads/2026/10/The-State-of-Obesity-Care-in-Canada-Benchmark-Report-DIGITAL_compressed.pdf">Obesity Canada’s 2026 report</a></p>
@@ -323,6 +331,34 @@ function renderMedicare(cms) {
   updateMedicarePeriod();
 }
 if (data.medicare) renderMedicare(data.medicare);
+
+function renderMedicaid(source) {
+  const rows = source.rows;
+  const brands = [...new Set(rows.map(row => row.brand))];
+  const periods = [...new Set(rows.map(row => row.period))];
+  el("medicaid").hidden = false;
+  chart("sdud-chart", "Published Medicaid prescription counts by quarter", periods,
+    brands.map((brand, index) => ({
+      label: brand,
+      color: colors[index],
+      values: periods.map(period => rows.find(row => row.brand === brand && row.period === period).fills)
+    })), compact, null, true);
+  options("sdud-period", periods);
+  el("sdud-period").value = rows.findLast(row => row.fills != null).period;
+  function updateMedicaid() {
+    const period = el("sdud-period").value;
+    table("sdud-table", period, ["Brand", "Published prescriptions", "Hidden package records", "Share of four brands"],
+      rows.filter(row => row.period === period).map(row => [
+        row.brand, row.fills == null ? "—" : row.fills.toLocaleString("en-US"),
+        row.suppressed_rows, pct(row.share)
+      ]));
+  }
+  const file = new Blob([JSON.stringify(source, null, 2)], {type:"application/json"});
+  el("sdud-download").href = URL.createObjectURL(file);
+  el("sdud-period").addEventListener("change", updateMedicaid);
+  updateMedicaid();
+}
+if (data.medicaid) renderMedicaid(data.medicaid);
 
 updateCost();updateForecast();updateScenario();
 </script>

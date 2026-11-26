@@ -18,7 +18,9 @@ I use published Medicare Part D data to compare fills and spending for Ozempic, 
 
 ## Explore the dashboard
 
-Open the dashboard from a successful **Portfolio checks** run in the **Actions** tab, or build it locally using the steps below.
+**[Download the dashboard ZIP](https://github.com/rayanatwork2004-alt/glp1-market-dynamics-forecasting/actions/runs/45858648575/artifacts/15137461189)**
+
+Sign in to GitHub, download and extract the ZIP, then open `dashboard.html` in your browser. For a newer build, open [Portfolio checks](../../actions/workflows/portfolio.yml), select a successful run, and download **glp1-market-lab** under **Artifacts**.
 
 Start with **Medicare Part D** for published fills, spending, and the annual forecast test. The simulation is a separate exercise.
 

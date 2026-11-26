@@ -30,13 +30,13 @@ jobs:
         env:
           GLP1_MEDICARE_DATA: .cache/medicare.json
       - name: Prepare public dashboard
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.event.repository.has_pages && !github.event.repository.private
         run: |
           mkdir -p public-dashboard
           cp outputs/dashboard.html public-dashboard/index.html
           cp outputs/medicare.json public-dashboard/medicare.json
       - uses: actions/upload-pages-artifact@v3
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.event.repository.has_pages && !github.event.repository.private
         with:
           path: public-dashboard
       - uses: actions/upload-artifact@v4
@@ -46,7 +46,7 @@ jobs:
           if-no-files-found: error
 
   publish-dashboard:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.event.repository.has_pages && !github.event.repository.private
     needs: validate
     runs-on: ubuntu-latest
     permissions:

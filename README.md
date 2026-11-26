@@ -12,7 +12,7 @@ This project simulates monthly prescriptions for Ozempic, Wegovy, Mounjaro, and 
 
 **[Open the live dashboard](https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/)**
 
-Run the pipeline and open `outputs/dashboard.html` in a browser. The dashboard also works offline. You can also open a successful **Portfolio checks** run in the repository’s **Actions** tab, download the **glp1-market-lab** artifact, and open `dashboard.html` from the extracted folder.
+Start with **Forecast audit → Zepbound → 3 months ahead**. Compare the two models, then switch to **6 months ahead** to see how the result changes.
 
 | View | Question it answers |
 | --- | --- |
@@ -23,6 +23,8 @@ Run the pipeline and open `outputs/dashboard.html` in a browser. The dashboard a
 
 ![Synthetic brand share over time](docs/assets/synthetic-brand-share.png)
 
+In the simulation, Wegovy prescriptions rose from **972,443 in October 2025** to **992,972 in November**, while its share of the four brands fell from **28.4% to 26.1%**. The panel grew faster than Wegovy did. If I only looked at share, I’d miss that Wegovy’s prescription volume actually went up.
+
 ## How I built it
 
 - **Market data.** A seeded simulation generates monthly total prescriptions (TRx), new prescriptions (NRx), synthetic prices and sales. Structural zeroes before modeled launch are preserved for share calculations and removed from forecast training.
@@ -30,13 +32,19 @@ Run the pipeline and open `outputs/dashboard.html` in a browser. The dashboard a
 - **Commercial scenarios.** I separate changes in total prescriptions from shifts between manufacturers and changes in synthetic gross revenue per prescription. This lets a reader see how rising volume and falling revenue per prescription can pull in different directions. The nutrition adjustment uses a declared sensitivity and starts after the configured lag.
 - **Research boundaries.** The nutrition relationship was built into the simulation. Comparing levels with monthly changes helps explain why two upward trends can look related. Neither correlation establishes a real commercial effect. The model uses aggregate synthetic records and contains no patient data.
 
-## How I’d use it
+## Would I use this forecast?
 
-I’d check the audit at the planning horizon before using a model. If SARIMAX misses more often or loses to the simple baseline, I’d show both estimates and explain the difference. I’d revisit the forecast after a meaningful coverage or supply change because the model learns from the simulated history it has seen. A short backtest also gives limited evidence about coverage, especially for newer brands.
+At three months ahead, SARIMAX had **0.3% WAPE** for simulated Zepbound prescriptions, compared with **30.6%** for the last value baseline. At six months, the errors rose to **21.6%** and **39.5%**, respectively. WAPE measures absolute forecast error relative to observed volume. SARIMAX did better in both comparisons, but each horizon had just **one held out observation**. I’d keep it as a candidate and test it on more months before relying on it for planning.
 
-I’d read the scenario output as a sensitivity exercise. A shift in share can change concentration without changing total prescriptions. A larger prescription forecast does not tell me how many patients can access treatment, how long they wait, or whether access differs across groups. Answering those questions would require real coverage, dispensing, and population data at the right level.
+## What I’d ask for on day one
+
+- **Monthly prescription fills by brand** to test the forecast against real dispensing data.
+- **Insurer coverage change dates** to check whether fill patterns shifted afterward and what else changed at the same time.
+- **Independent nutrition sales** to see whether actual purchases show the kind of lag I simulated.
 
 ## Run locally
+
+Run the pipeline and open `outputs/dashboard.html` in a browser. The dashboard also works offline. You can also open a successful **Portfolio checks** run in the repository’s **Actions** tab, download the **glp1-market-lab** artifact, and open `dashboard.html` from the extracted folder.
 
 ```bash
 git clone https://github.com/rayanatwork2004-alt/glp1-market-dynamics-forecasting.git

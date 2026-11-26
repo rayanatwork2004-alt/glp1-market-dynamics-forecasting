@@ -88,11 +88,11 @@ section > h2::before {
 #market > h2::before,#forecast > h2::before,#scenario > h2::before {background:var(--accent)}
 .controls,.legend {display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
 .controls {margin:20px 0}
-label {display:inline-flex;flex-wrap:wrap;align-items:center;gap:10px;color:#c5d1e3;font-size:13px;font-weight:600}
+label {display:inline-flex;flex-wrap:wrap;align-items:center;gap:10px;max-width:100%;min-width:0;color:#c5d1e3;font-size:13px;font-weight:600}
 select {
   font:inherit;color:var(--ink);background:#0b1525;
   border:1px solid #40516b;border-radius:8px;padding:10px 34px 10px 12px;
-  cursor:pointer;max-width:100%;min-height:42px;
+  cursor:pointer;max-width:100%;min-width:0;min-height:42px;
 }
 select:hover {border-color:var(--green)}
 :focus-visible {outline:2px solid var(--green);outline-offset:4px}

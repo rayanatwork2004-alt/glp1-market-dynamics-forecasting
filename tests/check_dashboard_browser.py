@@ -114,7 +114,14 @@ def check_controls(page, data):
 
     page.set_viewport_size({"width": 390, "height": 844})
     check_medicaid(page)
-    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
+    overflow = page.locator("body *").evaluate_all(
+        """nodes => nodes.filter(node => {
+            const box = node.getBoundingClientRect();
+            return box.width && box.right > innerWidth + 1 &&
+                !node.closest(".scroller") && !node.closest("nav") && !node.closest("svg");
+        }).map(node => ({tag:node.tagName,id:node.id,width:node.getBoundingClientRect().width}))"""
+    )
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"), overflow
     select = page.locator("#sdud-period")
     periods = option_values(page, "#sdud-period")
     choose(page, "#sdud-period", periods[0])

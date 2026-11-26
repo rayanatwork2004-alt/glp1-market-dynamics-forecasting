@@ -37,7 +37,25 @@ caption {text-align:left;font-weight:bold}
 <header><small>Healthcare analytics portfolio · Public benchmarks and synthetic forecasts</small><h1>GLP-1 Market Lab</h1>
 <p>Explore how prescriptions are distributed across four brands, how well the forecasts hold up, and what happens when commercial assumptions change.</p></header>
 <main>
-<nav aria-label="Dashboard sections"><a href="#evidence">U.S. market benchmarks</a><a href="#market">Simulated market</a><a href="#forecast">Forecast audit</a><a href="#scenario">Scenario explorer</a></nav>
+<nav aria-label="Dashboard sections"><a href="#medicare">Medicare Part D</a><a href="#canada">Canada context</a><a href="#evidence">U.S. market benchmarks</a><a href="#market">Simulated market</a><a href="#forecast">Forecast audit</a><a href="#scenario">Scenario explorer</a></nav>
+<section id="medicare"><h2>Real prescription fills · U.S. Medicare Part D</h2>
+<p>Compare reported fills and gross spending for Ozempic, Wegovy, Mounjaro and Zepbound. Fills include refills. Gross spending is before manufacturer rebates. The published brand totals can include more than one treatment indication.</p>
+<p id="cms-offline" class="hint">The public claims panel is included in the <a href="https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/#medicare">live dashboard</a>.</p>
+<div id="cms-content" hidden>
+<div class="controls"><label>Annual chart <select id="cms-metric"><option value="fills">Prescription fills</option><option value="spending">Gross spending</option><option value="share">Share of four brands</option></select></label>
+<label>Inspect period <select id="cms-period"></select></label></div>
+<div id="cms-chart"></div><div id="cms-table" class="scroller"></div>
+<p class="hint">Dash means no usable published value. Share is shown only when all four brands have reported fills in the same period. Preliminary releases may be revised and can cover several quarters, so they are shown in the period table and kept out of the annual chart and backtest.</p>
+<h3>Could a simple forecast track the real counts?</h3>
+<p class="hint">At each test, forecast one year ahead using only earlier annual observations. Last value repeats the previous year. Trend adds the average annual change since the first usable year. A brand needs five consecutive years for this check, with two years to start and at least three years to test. This is an exploratory comparison on a short series.</p>
+<div id="cms-audit" class="scroller"></div><div id="cms-trials" class="scroller"></div>
+<p id="cms-coverage" class="hint"></p>
+<p><a href="medicare.json" id="cms-data-download" download>Download the Medicare data and backtest results</a> · <a href="https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-medicaid-spending-by-drug/medicare-part-d-spending-by-drug/">CMS annual source</a> · <a href="https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-medicaid-spending-by-drug/medicare-quarterly-part-d-spending-by-drug">CMS preliminary source</a></p>
+</div></section>
+<section id="canada"><h2>Canada · safety and market context</h2>
+<p>On November 25, 2026, Health Canada published a safety review that found a possible link between prescription semaglutide and NAION, a very rare but serious condition involving vision loss. The review focused on semaglutide, which includes Ozempic and Wegovy. <a href="https://recalls-rappels.canada.ca/en/alert-recall/health-canada-warns-very-rare-serious-risk-vision-loss-semaglutide-drugs">Health Canada advisory</a></p>
+<p>Obesity Canada cites IQVIA estimates of about 350,000 Canadian prescriptions for obesity medications in 2020 and over 3.4 million in 2024. These are national estimates for a broader category. <a href="https://obesitycanada.ca/wp-content/uploads/2026/10/The-State-of-Obesity-Care-in-Canada-Benchmark-Report-DIGITAL_compressed.pdf">Obesity Canada’s 2026 report</a></p>
+<p class="hint">The study question is whether Canadian fills changed after the advisory. That takes comparable Canadian data before and after November 25, along with other events such as coverage or supply changes. U.S. Medicare fills cannot answer that question.</p></section>
 <section id="evidence"><h2>U.S. market benchmarks</h2>
 <p class="hint">Published figures on prescription volume, patient costs and clinical research. These benchmarks provide context for the simulation below. They use different populations, units and time periods.</p>
 <div id="reported-volume"></div><div id="reported-volume-values" class="scroller"></div>
@@ -92,7 +110,7 @@ function node(tag, attrs, label) {
   if (label !== undefined) item.textContent=label;
   return item;
 }
-function chart(id, title, dates, series, format, band) {
+function chart(id, title, dates, series, format, band, showPoints = false) {
   const w=720,h=255,left=67,right=24,top=12,bottom=30;
   const values=series.flatMap(s=>s.values).concat(band ? band.high : []).filter(Number.isFinite);
   const max=Math.max(1e-6,...values)*1.06;
@@ -118,6 +136,7 @@ function chart(id, title, dates, series, format, band) {
     s.values.forEach((v,i)=>{
       if(v==null){pen=false;return;}
       path+=(pen?" L":" M")+x(i)+" "+y(v);
+      if(showPoints) svg.append(node("circle",{cx:x(i),cy:y(v),r:4,fill:s.color}));
       pen=true;
     });
     svg.append(node("path",{d:path,fill:"none",stroke:s.color,"stroke-width":2.5,
@@ -227,6 +246,67 @@ function updateCost() {
     ["Difference for one month", money(149-selectedCost)]]);
 }
 el("cost-option").addEventListener("change",updateCost);
+function renderMedicare(cms) {
+  el("cms-offline").hidden = true;
+  el("cms-content").hidden = false;
+  const brands = cms.eligibility.map(row => row.brand);
+  const years = [...new Set(cms.annual.map(row => row.period))];
+  const periods = new Map(years.map(year => [year, cms.annual.filter(row => row.period === year)]));
+  for (const row of cms.preliminary) {
+    const key = row.period + " · preliminary";
+    if (!periods.has(key)) periods.set(key, []);
+    periods.get(key).push(row);
+  }
+  options("cms-period", [...periods.keys()]);
+  el("cms-period").value = [...periods.keys()].at(-1);
+  const metricLabels = {fills:"Prescription fills", spending:"Gross spending (USD)", share:"Share of the four brands"};
+  const count = n => n == null ? "—" : Math.round(n).toLocaleString("en-US");
+  const dollars = n => n == null ? "—" : "$" + count(n);
+  function updateMedicareChart() {
+    const metric = el("cms-metric").value;
+    const series = brands.map((brand, index) => ({
+      label: brand, color: colors[index],
+      values: years.map(year => periods.get(year).find(row => row.brand === brand)[metric]),
+    }));
+    if (series.every(line => line.values.every(value => value == null))) {
+      el("cms-chart").textContent = "No comparable annual values for this measure.";
+      return;
+    }
+    const format = {fills: compact, spending: money, share: pct}[metric];
+    chart("cms-chart", metricLabels[metric] + " · finalized annual data", years, series, format, null, true);
+  }
+  function updateMedicarePeriod() {
+    const period = el("cms-period").value;
+    table("cms-table", period, ["Brand","Fills","Gross spending (USD)","Share of four brands"],
+      periods.get(period).map(row => [row.brand, count(row.fills), dollars(row.spending), pct(row.share)]));
+  }
+  const scores = brands.flatMap(brand => {
+    const trials = cms.trials.filter(row => row.brand === brand);
+    if (!trials.length) return [];
+    const denominator = total(trials, "actual");
+    return [["Last value","last"],["Trend","drift"]].map(([label, key]) => {
+      const error = trials.reduce((sum, row) => sum + Math.abs(row[key] - row.actual), 0);
+      return [brand, label, trials.length, count(error / trials.length), pct(error / denominator)];
+    });
+  });
+  if (scores.length) {
+    table("cms-audit","Annual backtest scorecard",
+      ["Brand","Model","Test years","Average absolute miss (fills)","WAPE"], scores);
+    table("cms-trials","The held out answers and both forecasts",
+      ["Brand","Test year","Actual fills","Last value forecast","Trend forecast"],
+      cms.trials.map(row => [row.brand,row.period,count(row.actual),count(row.last),count(row.drift)]));
+  }
+  el("cms-coverage").textContent = "Usable consecutive annual history through " + years.at(-1) + " · " +
+    cms.eligibility.map(row => row.brand + ": " + row.years + (row.years === 1 ? " year" : " years")).join(" · ") + ".";
+  const file = new Blob([JSON.stringify(cms, null, 2)], {type:"application/json"});
+  el("cms-data-download").href = URL.createObjectURL(file);
+  el("cms-metric").addEventListener("change",updateMedicareChart);
+  el("cms-period").addEventListener("change",updateMedicarePeriod);
+  updateMedicareChart();
+  updateMedicarePeriod();
+}
+if (data.medicare) renderMedicare(data.medicare);
+
 updateCost();updateForecast();updateScenario();
 </script>
 </body>

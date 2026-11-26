@@ -4,7 +4,7 @@
 
 I wanted to answer a question a commercial analyst might get after presenting a forecast: if access or competition changes, which part of the forecast should we revisit first?
 
-This project simulates monthly prescriptions for Ozempic, Wegovy, Mounjaro, and Zepbound, alongside three companion nutrition categories. It uses 48 months of synthetic history from January 2022 to December 2025 and projects 24 months through December 2027. Every prescription, dollar amount, and scenario in the analysis is synthetic. The four brands define the modeled panel. The data do not distinguish individual indications or count unique patients.
+This project simulates monthly prescriptions for Ozempic, Wegovy, Mounjaro, and Zepbound, alongside three companion nutrition categories. It uses 48 months of synthetic history from January 2022 to December 2025 and projects 24 months through December 2027. The forecasts, historical inputs, and scenario results are synthetic. The dashboard also includes [public U.S. benchmarks](https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/#evidence) for reported Wegovy volume, Foundayo affordability, and clinical trial results. Each benchmark links to its source. The four brands define the modeled panel. The data do not distinguish individual indications or count unique patients.
 
 ## Explore the dashboard
 
@@ -14,7 +14,8 @@ Run the pipeline and open `outputs/dashboard.html` in a browser. The file works 
 
 | View | Question it answers |
 | --- | --- |
-| Market overview | Which brands gained share within this panel, and which manufacturers own them? |
+| U.S. market benchmarks | What do real prescription volume estimates, published patient costs, and trial results tell us about competition and access? |
+| Simulated market overview | Which brands gained share within this panel, and which manufacturers own them? |
 | Forecast audit | Does SARIMAX beat the last observed value at the lead time I care about? How often do the intervals cover the simulated outcomes? |
 | Scenario explorer | How much of the difference from the base comes from more prescriptions, a shift between manufacturers, or a change in revenue per prescription? |
 

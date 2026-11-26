@@ -34,17 +34,40 @@ caption {text-align:left;font-weight:bold}
 </style>
 </head>
 <body>
-<header><small>Healthcare analytics portfolio · Synthetic data</small><h1>GLP-1 Market Lab</h1>
+<header><small>Healthcare analytics portfolio · Public benchmarks and synthetic forecasts</small><h1>GLP-1 Market Lab</h1>
 <p>Explore how prescriptions are distributed across four brands, how well the forecasts hold up, and what happens when commercial assumptions change.</p></header>
 <main>
-<nav aria-label="Dashboard sections"><a href="#market">Market overview</a><a href="#forecast">Forecast audit</a><a href="#scenario">Scenario explorer</a></nav>
-<section id="market"><h2>Market overview</h2><p class="hint">Share uses total prescriptions (TRx) across the four modeled brands. A prescription count can include refills and is distinct from a patient count.</p>
+<nav aria-label="Dashboard sections"><a href="#evidence">U.S. market benchmarks</a><a href="#market">Simulated market</a><a href="#forecast">Forecast audit</a><a href="#scenario">Scenario explorer</a></nav>
+<section id="evidence"><h2>U.S. market benchmarks</h2>
+<p class="hint">Published figures on prescription volume, patient costs and clinical research. These benchmarks provide context for the simulation below. They use different populations, units and time periods.</p>
+<div id="reported-volume"></div><div id="reported-volume-values" class="scroller"></div>
+<p class="hint">Wegovy injection and pill combined, as shown in Novo Nordisk’s quarterly investor presentation. The totals are rounded company estimates for one franchise. <a href="https://www.novonordisk.com/content/dam/nncorp/global/en/investors/pdfs/financial-results/2026/Q3-2026-Full-presentation.pdf#page=10">Novo Nordisk Q3 2026 presentation, slide 10</a></p>
+<h3>One month of U.S. patient cost</h3>
+<p class="hint">Compare reported starting costs for Foundayo. Eligibility, dose, coverage and program terms affect what a patient pays. The difference shown is arithmetic using published amounts and does not estimate uptake or manufacturer revenue.</p>
+<label>Compare with the $149 self-pay starting offer <select id="cost-option">
+<option value="25">Commercial savings offer · $25</option>
+<option value="50">Medicare GLP-1 Bridge · $50</option>
+</select></label>
+<div id="cost-cards" class="grid" aria-live="polite"></div>
+<p class="hint"><a href="https://investor.lilly.com/news-releases/news-release-details/foundayotm-orforglipron-lillys-new-oral-glp-1-pill-weight-loss">Lilly’s April 2026 U.S. launch terms</a> · <a href="https://www.cms.gov/medicare/coverage/prescription-drug-coverage/medicare-glp-1-bridge/information-providers">CMS Medicare GLP-1 Bridge eligibility and copay</a></p>
+<div class="scroller"><table>
+<caption>Clinical evidence behind the market questions</caption>
+<thead><tr><th scope="col">Study</th><th scope="col">Reported result</th></tr></thead>
+<tbody>
+<tr><td><a href="https://www.nejm.org/doi/full/10.1056/NEJMoa2206038">SURMOUNT-1</a></td><td>22.5% mean weight reduction at 72 weeks, tirzepatide 15 mg, efficacy analysis.</td></tr>
+<tr><td><a href="https://www.nejm.org/doi/full/10.1056/NEJMoa2416394">SURMOUNT-5</a></td><td>20.2% for tirzepatide versus 13.7% for semaglutide at 72 weeks in a direct comparison.</td></tr>
+<tr><td><a href="https://investor.lilly.com/news-releases/news-release-details/lillys-triple-agonist-retatrutide-delivered-powerful-weight-loss">TRIUMPH-1</a></td><td>28.3% at 80 weeks, investigational retatrutide 12 mg, sponsor-reported efficacy analysis.</td></tr>
+<tr><td><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11965027/">SURMOUNT-1 body composition substudy</a></td><td>About 25% of weight lost was lean mass in both the tirzepatide and placebo groups.</td></tr>
+</tbody></table></div>
+<p class="hint">Use SURMOUNT-5 for the direct comparison. The other studies had different designs. The body composition finding motivates a nutrition research question; it gives no estimate of supplement purchases.</p>
+</section>
+<section id="market"><h2>Simulated market overview</h2><p class="hint">Share uses total prescriptions (TRx) across the four modeled brands. A prescription count can include refills and is distinct from a patient count.</p>
 <div id="market-cards" class="grid"></div><div id="market-chart"></div><div id="market-table" class="scroller"></div></section>
-<section id="forecast"><h2>Forecast audit</h2><p class="hint">Each model is fit using only months before its forecast. Last value carries forward the most recent observation.</p>
+<section id="forecast"><h2>Forecast audit · synthetic data</h2><p class="hint">Each model is fit using only months before its forecast. Last value carries forward the most recent observation.</p>
 <div class="controls"><label>Segment <select id="segment"></select></label><label>Months ahead <select id="horizon"><option>1</option><option selected>3</option><option>6</option></select></label></div>
 <div id="forecast-chart"></div><div id="held-out"></div><div id="audit" class="scroller" aria-live="polite"></div><p id="diagnostics" class="hint"></p>
 <p class="hint">WAPE is total absolute error divided by total observed volume or sales. Positive bias means overforecasting. Coverage is the share of held out observations inside each prediction interval. With few observations, coverage can swing sharply. The 24 month view extends beyond the tested horizons.</p></section>
-<section id="scenario"><h2>Scenario explorer</h2><p class="hint">Compare hypothetical business conditions with the statistical base forecast. Payer coverage means whether and under what conditions an insurer pays for a treatment.</p>
+<section id="scenario"><h2>Scenario explorer · synthetic assumptions</h2><p class="hint">Compare hypothetical business conditions with the statistical base forecast. Payer coverage means whether and under what conditions an insurer pays for a treatment.</p>
 <label>Commercial assumption <select id="case"></select></label>
 <p id="assumptions" aria-live="polite"></p><div id="scenario-cards" class="grid"></div><div id="scenario-chart"></div>
 <p class="hint">The nutrition response is a simulation assumption. The gross figure applies synthetic revenue per prescription and excludes rebates and actual net pricing. Manufacturer HHI measures concentration within this four brand panel on a 0 to 10,000 scale.</p></section>
@@ -192,7 +215,19 @@ const peak=data.correlation.filter(r=>r.Correlation_Type==="First_Difference"&&r
   .sort((a,b)=>b.Pearson_Correlation-a.Pearson_Correlation)[0];
 if(peak)el("lag-note").textContent="In the simulation, monthly changes aligned most closely at a "+peak.TRx_Lead_Months+
   " month prescription lead (r = "+peak.Pearson_Correlation.toFixed(2)+"). The relationship was built into the generator.";
-updateForecast();updateScenario();
+const reportedQuarters = ["2026 Q1", "2026 Q2", "2026 Q3"];
+chart("reported-volume", "Wegovy franchise volume by quarter · reported U.S. estimates",
+  reportedQuarters, [{label:"Reported volume", color:colors[0], values:[4.7e6, 6.8e6, 7.6e6]}], compact);
+table("reported-volume-values","Published quarterly estimates",["Quarter","Prescriptions"],
+  [["Q1 2026","~4.7 million"],["Q2 2026","~6.8 million"],["Q3 2026","~7.6 million"]]);
+function updateCost() {
+  const selectedCost = Number(el("cost-option").value);
+  cards("cost-cards", [["Self-pay starting offer", money(149)],
+    ["Selected offer or copay", money(selectedCost)],
+    ["Difference for one month", money(149-selectedCost)]]);
+}
+el("cost-option").addEventListener("change",updateCost);
+updateCost();updateForecast();updateScenario();
 </script>
 </body>
 </html>

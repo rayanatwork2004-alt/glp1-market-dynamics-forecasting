@@ -2,11 +2,11 @@
 
 **A healthcare analytics portfolio project on brand competition, forecast reliability, and companion nutrition.**
 
-This is my first healthcare analytics project. I brought together what I learned in school and what I was learning on my own about the pharmaceutical industry. An obesity market brief shared by someone working in pharma helped me decide which questions to explore, especially around competition, insurance coverage, and companion nutrition.
+This is my first healthcare analytics project. I combined what I learned in school with my own research into the pharmaceutical industry. An obesity market brief helped me see why prescription growth alone tells only part of the story. New treatments can shift which brands people fill, insurance coverage affects what patients can access, and growing use of these medicines raises a separate question about demand for companion nutrition products.
 
-I started with one question. If access or competition changes, which part of the prescription forecast should I revisit first?
+That gave me a question to build the project around. If coverage or competition changes, what should I look at first to understand what’s happening to prescription demand?
 
-This project simulates monthly prescriptions for Ozempic, Wegovy, Mounjaro, and Zepbound, alongside three companion nutrition categories. It uses 48 months of synthetic history from January 2022 to December 2025 and projects 24 months through December 2027. The forecasts, historical inputs, and scenario results are synthetic. The dashboard also includes [public U.S. benchmarks](https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/#evidence) for reported Wegovy volume, Foundayo affordability, and clinical trial results. Each benchmark links to its source. The four brands define the modeled panel. The data do not distinguish individual indications or count unique patients.
+I use published Medicare Part D data to compare fills and spending for Ozempic, Wegovy, Mounjaro, and Zepbound and test simple forecasts where the annual history allows it. The dashboard also includes [public U.S. benchmarks](https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/#evidence) for reported Wegovy volume, Foundayo affordability, and clinical trial results. A separate simulation uses 48 months of synthetic history to explore how changes in volume, share, and pricing could affect a forecast. The companion nutrition response is an assumption in that simulation and would need independent sales data to test.
 
 ## Explore the dashboard
 

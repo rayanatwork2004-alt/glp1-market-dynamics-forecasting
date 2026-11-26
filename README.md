@@ -18,7 +18,7 @@ I use published Medicare Part D data to compare fills and spending for Ozempic, 
 
 ## Explore the dashboard
 
-**[Open the interactive dashboard](https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/)**
+**[Open the interactive dashboard](https://rayanatwork2004-alt.github.io/glp1-market-dynamics-forecasting/?v=interaction-review)**
 
 Start with **Medicare Part D** for published fills, spending, and the annual forecast test. The simulation is a separate exercise.
 
@@ -49,7 +49,7 @@ In the simulation, Wegovy prescriptions rose from **972,443 in October 2025** to
 
 ## How the simulated forecast performed
 
-At three months ahead, SARIMAX had **0.3% WAPE** for simulated Zepbound prescriptions, compared with **30.6%** for the last value baseline. At six months, the errors rose to **21.6%** and **39.5%**, respectively. WAPE measures absolute forecast error relative to observed volume. SARIMAX did better in both comparisons, but each comparison used just **one simulated month that the models hadn’t seen**. I’d keep it as a candidate and test it on more months before relying on it for planning.
+The synthetic forecast audit is a methods exercise with limited evidence for newer brands. For Zepbound, SARIMAX had 0.3% WAPE at three months ahead and 21.6% at six months, compared with 30.6% and 39.5% for the last value baseline. Each comparison used only one simulated test month. Those scores describe that single test and give little evidence about future reliability. The dashboard shows the number of distinct test months beside each selection.
 
 ## What I’d ask for on day one
 
@@ -59,7 +59,7 @@ At three months ahead, SARIMAX had **0.3% WAPE** for simulated Zepbound prescrip
 
 ## Run locally
 
-The default local build includes the simulation. To include public claims, run `python -m glp1_market.medicare` after installation and set `GLP1_MEDICARE_DATA=.cache/medicare.json` in your shell before running the pipeline. GitHub Actions includes the claims automatically.
+The default local build includes the simulation. GitHub Actions includes both public claims panels automatically. For a local build with public claims, run `python -m glp1_market.medicare` and `python -m glp1_market.medicaid` after installation. Set `GLP1_MEDICARE_DATA=.cache/medicare.json` and `GLP1_MEDICAID_DATA=.cache/medicaid.json` in your shell before running the pipeline.
 
 Run the pipeline and open `outputs/dashboard.html` in a browser. The dashboard also works offline. You can also open a successful **Portfolio checks** run in the repository’s **Actions** tab, download the **glp1-market-lab** artifact, and open `dashboard.html` from the extracted folder.
 
@@ -79,3 +79,5 @@ python -m pytest
 
 The pipeline saves the interactive dashboard, the original static charts, and CSVs for the forecast scores, predictions, and scenarios. The Python package lives in [src/glp1_market](src/glp1_market), with the method and metric definitions in [docs](docs).
 
+
+GitHub Actions also opens the generated dashboard in Chromium and checks the selectors, moving period markers, visible forecast points, downloads, keyboard controls, and mobile layout. Publication waits for those checks to pass.

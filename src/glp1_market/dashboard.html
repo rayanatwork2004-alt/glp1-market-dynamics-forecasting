@@ -70,6 +70,7 @@ nav a {
   border:1px solid transparent;border-radius:8px;
   transition:background .15s,border-color .15s;
 }
+nav a[hidden] {display:none}
 nav a:hover,nav a:focus-visible {color:var(--green);border-color:#3d6f6a;background:#173334}
 section {
   scroll-margin-top:86px;margin:0 0 22px;padding:28px;
@@ -78,6 +79,7 @@ section {
   box-shadow:0 8px 24px #0000001a;
 }
 section:target {border-color:#5b928d}
+[role="alert"] {padding:14px;border:1px solid #ff8eb1;border-radius:8px;color:#ffbfd4}
 section > h2::before {
   content:"";display:inline-block;width:4px;height:22px;
   border-radius:4px;background:var(--green);margin-right:12px;vertical-align:-2px;
@@ -150,7 +152,7 @@ details p {font-size:14px}
 <div id="cms-content" hidden>
 <div class="controls"><label>Annual chart <select id="cms-metric"><option value="fills">Prescription fills</option><option value="spending">Gross spending</option><option value="share">Share of four brands</option></select></label>
 <label>Inspect period <select id="cms-period"></select></label></div>
-<div id="cms-chart"></div><p id="cms-chart-note" class="hint" aria-live="polite"></p><div id="cms-table" class="scroller"></div>
+<div id="cms-chart"></div><p id="cms-chart-note" class="hint" role="status"></p><div id="cms-period-chart" aria-live="polite"></div><div id="cms-table" class="scroller"></div>
 <p class="hint">A dash means a figure is missing or can’t be used. I show share only when all four brands have reported fills for the same period. Newer figures may change and can cover only part of a year. You’ll find them in the period table.</p>
 <details><summary>Why are some early years blank?</summary>
 <p>Ozempic was approved for type 2 diabetes in 2017. Mounjaro was approved for type 2 diabetes in 2022. Wegovy and Zepbound were first approved for weight management in 2021 and 2023, respectively. Standard Medicare Part D excluded drugs when used for weight loss. In 2024, Wegovy gained a cardiovascular indication and Zepbound gained a sleep apnea indication, which made those uses eligible for Part D coverage.</p>
@@ -167,7 +169,7 @@ details p {font-size:14px}
 <p>This chart uses national Medicaid totals for the same four brands. It covers prescriptions reimbursed by Medicaid, a separate program from Medicare Part D.</p>
 <label>Inspect quarter <select id="sdud-period"></select></label>
 <p class="hint">The shaded column marks the quarter shown in the table.</p>
-<div id="sdud-chart"></div>
+<div id="sdud-chart"></div><p id="sdud-status" class="hint" role="status"></p>
 
 <div id="sdud-table" class="scroller"></div>
 <p class="hint">A dash means no usable published count. If some package counts are hidden, the figure is the sum of the published counts only. Share is shown only when all four brands have published counts and their records have no hidden counts for that quarter.</p>
@@ -209,9 +211,9 @@ details p {font-size:14px}
 <section id="market"><h2>Simulated market overview</h2><p class="hint">Share uses total prescriptions (TRx) across the four modeled brands. A prescription count can include refills and is distinct from a patient count.</p>
 <div id="market-cards" class="grid"></div><div id="market-chart"></div><div id="market-table" class="scroller"></div></section>
 <section id="forecast"><h2>Forecast audit · synthetic data</h2><p class="hint">Each model is fit using only months before its forecast. Last value carries forward the most recent observation.</p>
-<div class="controls"><label>Segment <select id="segment"></select></label><label>Months ahead <select id="horizon"><option>1</option><option selected>3</option><option>6</option></select></label></div>
-<div id="forecast-chart"></div><div id="held-out"></div><div id="audit" class="scroller" aria-live="polite"></div><p id="diagnostics" class="hint"></p>
-<p class="hint">WAPE is total absolute error divided by total observed volume or sales. Positive bias means overforecasting. Coverage is the share of held out observations inside each prediction interval. With few observations, coverage can swing sharply. The 24 month view extends beyond the tested horizons.</p></section>
+<div class="controls"><label>Segment <select id="segment"></select></label><label>Forecast and test horizon <select id="horizon"><option>1</option><option selected>3</option><option>6</option></select></label></div>
+<p id="forecast-status" class="hint" role="status"></p><div id="forecast-chart"></div><div id="held-out"></div><div id="audit" class="scroller" aria-live="polite"></div><p id="diagnostics" class="hint"></p>
+<p class="hint">WAPE is total absolute error divided by total observed volume or sales. Positive bias means overforecasting. Coverage is the share of held out observations inside each prediction interval. With few observations, coverage can swing sharply. The forecast chart displays the selected number of months ahead.</p></section>
 <section id="scenario"><h2>Scenario explorer · synthetic assumptions</h2><p class="hint">Compare what might happen under different insurance and pricing assumptions. Base is the forecast before those changes. Payer coverage means what an insurer will pay for and under which conditions.</p>
 <label>Commercial assumption <select id="case"></select></label>
 <p id="assumptions" aria-live="polite"></p><div id="scenario-cards" class="grid"></div><div id="scenario-chart"></div>
@@ -226,10 +228,11 @@ const el = id => document.getElementById(id);
 const fmt = new Intl.NumberFormat("en-US", {notation:"compact", maximumFractionDigits:2});
 const pct = n => n == null ? "—" : (n*100).toFixed(1)+"%";
 const compact = n => n == null ? "—" : fmt.format(n);
-const money = n => "$"+compact(n);
+const money = n => n == null ? "—" : (n < 0 ? "-$" : "$")+compact(Math.abs(n));
 const total = (rows,key) => rows.reduce((sum,row)=>sum+row[key],0);
-const month = d => d.slice(0,7);
+const month = d => /^\d{4}-\d{2}-/.test(d) ? d.slice(0,7) : d;
 const colors = ["#67e8ce","#ffc078","#b8a9ff","#ff8eb1"];
+const brandColors = {Ozempic:colors[0], Wegovy:colors[1], Mounjaro:colors[2], Zepbound:colors[3]};
 const svgNS = "http://www.w3.org/2000/svg";
 function node(tag, attrs, label) {
   const item = document.createElementNS(svgNS,tag);
@@ -237,25 +240,31 @@ function node(tag, attrs, label) {
   if (label !== undefined) item.textContent=label;
   return item;
 }
-function chart(id, title, dates, series, format, band, showPoints = false, selectedIndex = -1) {
+function chart(id, title, dates, series, format, band, showPoints = true, selectedIndex = -1, bars = false) {
   const w=720,h=255,left=67,right=24,top=12,bottom=30;
-  const values=series.flatMap(s=>s.values).concat(band ? band.high : []).filter(Number.isFinite);
-  const max=Math.max(1e-6,...values)*1.06;
+  const values=series.flatMap(s=>s.values).concat(band ? [...band.high,...band.low] : []).filter(Number.isFinite);
+  if (!values.length) {
+    el(id).textContent=title+" · No values available for this selection.";
+    return;
+  }
+  const min=Math.min(0,...values);
+  const max=Math.max(1,...values)*1.06;
+  const floor=min < 0 ? min*1.06 : 0;
   const x=i=>left+i*(w-left-right)/Math.max(1,dates.length-1);
-  const y=v=>h-bottom-v/max*(h-top-bottom);
+  const y=v=>h-bottom-(v-floor)/(max-floor)*(h-top-bottom);
   const svg=node("svg",{viewBox:"0 0 "+w+" "+h,role:"img","aria-label":title});
   svg.append(node("title",{},title));
   for(let i=0;i<=4;i++){
-    const v=max*i/4;
+    const v=floor+(max-floor)*i/4;
     svg.append(node("line",{x1:left,x2:w-right,y1:y(v),y2:y(v),stroke:"#2b3a50"}));
     svg.append(node("text",{x:left-8,y:y(v)+4,"text-anchor":"end","font-size":12,fill:"#a8b8cf"},format(v)));
   }
-  const selectedX = selectedIndex >= 0 ? x(selectedIndex) : null;
+  const selectedX = selectedIndex >= 0 && selectedIndex < dates.length ? x(selectedIndex) : null;
   if (selectedX !== null) {
     svg.append(node("rect", {x:selectedX-8, y:top, width:16, height:h-bottom-top,
-      fill:"#31465e", "data-selected-quarter":dates[selectedIndex]}));
+      fill:"#31465e", "data-selected-period":dates[selectedIndex]}));
   }
-  const marks=[0,Math.floor((dates.length-1)/2),dates.length-1];
+  const marks=dates.length <= 4 ? dates.map((_,i)=>i) : [0,Math.floor((dates.length-1)/2),dates.length-1];
   [...new Set(marks)].filter(i=>i>=0).forEach(i=>svg.append(node("text",
     {x:x(i),y:h-7,"text-anchor":"middle","font-size":12,fill:"#a8b8cf"},month(dates[i]))));
   if(band){
@@ -267,17 +276,23 @@ function chart(id, title, dates, series, format, band, showPoints = false, selec
   series.forEach(s=>{
     let path="", pen=false;
     s.values.forEach((v,i)=>{
-      if(v==null){pen=false;return;}
+      if(!Number.isFinite(v)){pen=false;return;}
       path+=(pen?" L":" M")+x(i)+" "+y(v);
+      if (bars) {
+        svg.append(node("rect", {x:x(i)-20,y:Math.min(y(v),y(0)),width:40,
+          height:Math.abs(y(v)-y(0)),fill:s.color,rx:4}));
+      }
       if (showPoints) {
         const isSelected = i === selectedIndex;
         if (isSelected) {
-          const point = node("circle", {cx:x(i), cy:y(v), r:6, fill:s.color,
+          const point = node("circle", {cx:x(i), cy:y(v), r:7, fill:s.color,
             stroke:"#fff", "stroke-width":2});
-          point.append(node("title", {}, s.label + ": " + v.toLocaleString("en-US") + " published prescriptions"));
+          point.append(node("title", {}, s.label + " · " + dates[i] + " · " + format(v)));
           selectedPoints.push(point);
         } else {
-          svg.append(node("circle", {cx:x(i), cy:y(v), r:4, fill:s.color}));
+          const point=node("circle", {cx:x(i), cy:y(v), r:4, fill:s.color});
+          point.append(node("title", {}, s.label+" · "+dates[i]+" · "+format(v)));
+          svg.append(point);
         }
       }
       pen=true;
@@ -297,9 +312,10 @@ function chart(id, title, dates, series, format, band, showPoints = false, selec
     const swatch=document.createElement("span");swatch.className="swatch";swatch.style.background=s.color;
     label.append(swatch,s.label);legend.append(label);
   });
-  el(id).replaceChildren(heading,svg,legend);
+  el(id).replaceChildren(...(bars ? [heading,svg] : [heading,svg,legend]));
 }
 function table(id, label, heads, rows) {
+  if (!rows.length) { el(id).textContent=label+" · No results available for this selection."; return; }
   const table=document.createElement("table");
   table.createCaption().textContent=label;
   const head=table.createTHead().insertRow();
@@ -324,7 +340,7 @@ const latest=history.filter(r=>r.Month===dates.at(-1)).sort((a,b)=>b.TRx-a.TRx);
 cards("market-cards",[["Latest monthly TRx",compact(monthly.get(dates.at(-1)))],
   ["Leading brand",latest[0].Brand_Name],["Leader share",pct(latest[0].TRx/monthly.get(dates.at(-1)))]]);
 chart("market-chart","Brand share over time",dates,brands.map((b,i)=>({
-  label:b,color:colors[i],values:dates.map(d=>history.find(r=>r.Month===d&&r.Brand_Name===b).TRx/monthly.get(d))
+  label:b,color:brandColors[b] ?? colors[i],values:dates.map(d=>monthly.get(d) > 0 && history.find(r=>r.Month===d&&r.Brand_Name===b) ? history.find(r=>r.Month===d&&r.Brand_Name===b).TRx/monthly.get(d) : null)
 })),pct);
 table("market-table","Competitive landscape · "+month(dates.at(-1)),
   ["Brand","Manufacturer","Molecule","TRx","Panel share"],
@@ -333,12 +349,19 @@ const segments=[...new Set(data.forecasts.filter(r=>r.Metric!=="Gross_Revenue_US
 options("segment",segments);if(segments.includes("Zepbound"))el("segment").value="Zepbound";
 function updateForecast(){
   const segment=el("segment").value,h=Number(el("horizon").value);
-  const forecast=data.forecasts.filter(r=>r.Segment===segment&&r.Metric!=="Gross_Revenue_USD");
+  const forecast=data.forecasts.filter(r=>r.Segment===segment&&r.Metric!=="Gross_Revenue_USD")
+    .sort((a,b)=>a.Month.localeCompare(b.Month)).slice(0,h);
+  if (!forecast.length) {
+    for (const id of ["forecast-chart","held-out","audit"]) el(id).textContent="No forecast available for this segment.";
+    el("forecast-status").textContent="";
+    el("diagnostics").textContent="";
+    return;
+  }
   const isTrx=forecast[0].Metric==="TRx", format=isTrx?compact:money;
   const actual=(isTrx ? history.filter(r=>r.Brand_Name===segment) :
     data.nutrition_history.filter(r=>r.Supplement_Category===segment)).sort((a,b)=>a.Month.localeCompare(b.Month));
   const padding=Array(actual.length).fill(null);
-  chart("forecast-chart",segment+(isTrx?" · prescriptions":" · nutrition sales"),
+  chart("forecast-chart",segment+(isTrx?" · synthetic prescriptions":" · synthetic nutrition sales")+" · next "+h+" months",
     [...actual.map(r=>r.Month),...forecast.map(r=>r.Month)],
     [{label:"Synthetic history",color:colors[0],values:actual.map(r=>isTrx?r.TRx:r.Total_Sales_USD)},
      {label:"Forecast",color:colors[2],dash:true,values:[...padding,...forecast.map(r=>r.Forecast)]}],format,{high:[...padding,...forecast.map(r=>r.Upper_95)],low:[...padding,...forecast.map(r=>r.Lower_95)]});
@@ -349,8 +372,11 @@ function updateForecast(){
     ...["SARIMAX","Last value"].map((model,i)=>({label:model,color:colors[i+1],dash:i===1,
       values:testedDates.map(d=>tests.find(r=>r.Month===d&&r.Model===model)?.Prediction ?? null)}))
   ];
-  if(testedDates.length)chart("held-out","Held out forecasts",testedDates,heldOutSeries,format);
+  if(testedDates.length)chart("held-out","Held out forecasts · "+h+" months ahead",testedDates,heldOutSeries,format);
   else el("held-out").textContent="Insufficient history for this backtest.";
+  el("forecast-status").textContent=segment+" · "+h+" months ahead · "+testedDates.length+
+    " distinct test "+(testedDates.length === 1 ? "month" : "months")+
+    (testedDates.length < 3 ? ". Too few test months to judge reliability." : ". Results use synthetic observations.");
   const rows=data.audit.filter(r=>r.Segment===segment&&r.Horizon===h);
   table("audit","Held out scorecard · "+h+" months ahead",
     ["Model","Forecasts","MAE","RMSE","WAPE","Bias","80% coverage","95% coverage","Failed to converge"],
@@ -364,15 +390,23 @@ function updateForecast(){
 }
 options("case",[...new Set(data.scenarios.map(r=>r.Scenario))]);
 function updateScenario(){
-  const rows=data.scenarios.filter(r=>r.Scenario===el("case").value), last=rows.at(-1);
+  const name=el("case").value;
+  const rows=data.scenarios.filter(r=>r.Scenario===name).sort((a,b)=>a.Month.localeCompare(b.Month));
+  if (!rows.length) {
+    el("scenario-chart").textContent="No results available for this scenario.";
+    el("scenario-cards").replaceChildren();
+    el("assumptions").textContent="";
+    return;
+  }
+  const last=rows.at(-1);
   const delta=(base,scenario,format)=>{const v=total(rows,scenario)-total(rows,base);return (v>0?"+":"")+format(v);};
   el("assumptions").textContent=last.Assumptions;
   cards("scenario-cards",[["TRx change vs base",delta("Base_TRx","TRx",compact)],
-    ["Gross USD change",delta("Base_Gross_USD","Gross_USD",compact)],
-    ["Nutrition USD change",delta("Base_Nutrition_USD","Nutrition_USD",compact)],
+    ["Gross revenue change (USD)",delta("Base_Gross_USD","Gross_USD",money)],
+    ["Nutrition sales change (USD)",delta("Base_Nutrition_USD","Nutrition_USD",money)],
     ["Final Eli Lilly share",pct(last.Lilly_Share)],
     ["Final manufacturer HHI",Math.round(last.Manufacturer_HHI).toLocaleString()]]);
-  chart("scenario-chart","Monthly prescription volume",rows.map(r=>r.Month),[
+  chart("scenario-chart",name+" · synthetic monthly prescription volume",rows.map(r=>r.Month),[
     {label:"Base",color:colors[2],dash:true,values:rows.map(r=>r.Base_TRx)},
     {label:"Selected scenario",color:colors[0],values:rows.map(r=>r.TRx)}],compact);
 }
@@ -398,7 +432,7 @@ function renderMedicare(cms) {
   el("cms-offline").hidden = true;
   el("cms-content").hidden = false;
   const brands = cms.eligibility.map(row => row.brand);
-  const years = [...new Set(cms.annual.map(row => row.period))];
+  const years = [...new Set(cms.annual.map(row => row.period))].sort();
   const periods = new Map(years.map(year => [year, cms.annual.filter(row => row.period === year)]));
   for (const row of cms.preliminary) {
     const key = row.period + " · preliminary";
@@ -413,26 +447,35 @@ function renderMedicare(cms) {
   const count = n => n == null ? "—" : Math.round(n).toLocaleString("en-US");
   const dollars = n => n == null ? "—" : "$" + count(n);
   function updateMedicareChart() {
-    const metric = el("cms-metric").value;
-    const series = brands.map((brand, i) => ({
-      label: brand, color: colors[i],
-      values: years.map(year => periods.get(year).find(row => row.brand === brand)[metric]),
+    const metric=el("cms-metric").value;
+    const selected=el("cms-period").value;
+    const selectedRows=periods.get(selected);
+    const format={fills:compact,spending:money,share:pct}[metric];
+    chart("cms-period-chart", metricLabels[metric]+" · "+selected, brands,
+      brands.map((brand,i)=>({label:brand,color:brandColors[brand] ?? colors[i],
+        values:brands.map(label=>label===brand ? selectedRows.find(row=>row.brand===brand)?.[metric] ?? null : null)})),
+      format,null,true,-1,true);
+    const series=brands.map((brand,i)=>({
+      label:brand,color:brandColors[brand] ?? colors[i],
+      values:years.map(year=>periods.get(year).find(row=>row.brand===brand)?.[metric] ?? null)
     }));
-    const shown = years.filter((year, i) => series.some(line => line.values[i] != null));
-    el("cms-chart-note").textContent = metric === "share"
-      ? "All four brands reported fills in " + shown.join(", ") + ". Earlier years have an incomplete total."
+    const shown=years.filter((year,i)=>series.some(line=>line.values[i]!=null));
+    el("cms-chart-note").textContent=metric==="share"
+      ? (shown.length ? "All four brands reported fills in "+shown.join(", ")+". Earlier years have an incomplete total." :
+        "No annual period has a complete four brand total for share.")
       : "Lines start at the first usable published value. They leave gaps where figures are unavailable.";
-    if (series.every(line => line.values.every(value => value == null))) {
-      el("cms-chart").textContent = "No comparable annual values for this measure.";
-      return;
-    }
-    const format = {fills: compact, spending: money, share: pct}[metric];
-    chart("cms-chart", metricLabels[metric] + " · finalized annual data", years, series, format, null, true);
+    const index=years.indexOf(selected);
+    chart("cms-chart",metricLabels[metric]+" · finalized annual data"+
+      (index>=0 ? " · "+selected+" highlighted" : ""),years,series,format,null,true,index);
+    if (index<0) el("cms-chart-note").textContent+=" The selected preliminary period is shown in the comparison chart below.";
   }
   function updateMedicarePeriod() {
     const period = el("cms-period").value;
     table("cms-table", period, ["Brand","Fills","Gross spending (USD)","Share of four brands"],
-      periods.get(period).map(row => [row.brand, count(row.fills), dollars(row.spending), shares(row.share)]));
+      brands.map(brand => {
+        const row=periods.get(period).find(row=>row.brand===brand) ?? {};
+        return [brand,count(row.fills),dollars(row.spending),shares(row.share)];
+      }));
   }
   const scores = brands.flatMap(brand => {
     const trials = cms.trials.filter(row => row.brand === brand);
@@ -455,28 +498,48 @@ function renderMedicare(cms) {
   const file = new Blob([JSON.stringify(cms, null, 2)], {type:"application/json"});
   el("cms-data-download").href = URL.createObjectURL(file);
   el("cms-metric").addEventListener("change",updateMedicareChart);
-  el("cms-period").addEventListener("change",updateMedicarePeriod);
+  el("cms-period").addEventListener("change",()=>{updateMedicareChart();updateMedicarePeriod();});
   updateMedicareChart();
   updateMedicarePeriod();
 }
-if (data.medicare) renderMedicare(data.medicare);
+function renderSection(id, render) {
+  try {
+    render();
+  } catch (error) {
+    console.error("Unable to render "+id,error);
+    const section=el(id);
+    const message=document.createElement("p");
+    message.setAttribute("role","alert");
+    message.textContent="This section could not load. Reload the dashboard or use the data download to inspect the results.";
+    section.hidden=false;
+    section.prepend(message);
+    section.querySelectorAll("select").forEach(control=>control.disabled=true);
+  }
+}
+if (data.medicare?.annual?.length && data.medicare?.eligibility?.length) {
+  renderSection("medicare",()=>renderMedicare(data.medicare));
+}
 
 function renderMedicaid(source) {
   const rows = source.rows;
   const brands = [...new Set(rows.map(row => row.brand))];
-  const periods = [...new Set(rows.map(row => row.period))];
+  const periods = [...new Set(rows.map(row => row.period))].sort();
   el("medicaid").hidden = false;
   const series = brands.map((brand, index) => ({
     label: brand,
-    color: colors[index],
+    color: brandColors[brand] ?? colors[index],
     values: periods.map(period => rows.find(row => row.brand === brand && row.period === period)?.fills ?? null)
   }));
   options("sdud-period", periods);
-  el("sdud-period").value = rows.findLast(row => row.fills != null).period;
+  el("sdud-period").value=[...periods].reverse().find(period=>rows.some(row=>row.period===period&&row.fills!=null)) ?? periods.at(-1);
   function updateMedicaid() {
     const period = el("sdud-period").value;
     chart("sdud-chart", "Published prescriptions · " + period + " highlighted",
       periods, series, compact, null, true, periods.indexOf(period));
+    const selectedRows=rows.filter(row=>row.period===period);
+    el("sdud-status").textContent=period+" · "+selectedRows.filter(row=>row.fills!=null).length+
+      " brands with published counts · "+selectedRows.reduce((sum,row)=>sum+(row.suppressed_rows ?? 0),0)+
+      " hidden package records. Published sums can understate the full count.";
     table("sdud-table", period, ["Brand", "Published prescriptions", "Hidden package records", "Share of four brands"],
       rows.filter(row => row.period === period).map(row => [
         row.brand, row.fills == null ? "—" : row.fills.toLocaleString("en-US"),
@@ -488,9 +551,15 @@ function renderMedicaid(source) {
   el("sdud-period").addEventListener("change", updateMedicaid);
   updateMedicaid();
 }
-if (data.medicaid) renderMedicaid(data.medicaid);
+if (data.medicaid?.rows?.length) {
+  renderSection("medicaid",()=>renderMedicaid(data.medicaid));
+} else {
+  document.querySelector('nav a[href="#medicaid"]').hidden=true;
+}
 
-updateCost();updateForecast();updateScenario();
+renderSection("evidence",updateCost);
+renderSection("forecast",updateForecast);
+renderSection("scenario",updateScenario);
 </script>
 </body>
 </html>

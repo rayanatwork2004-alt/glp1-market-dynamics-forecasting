@@ -32,6 +32,12 @@ jobs:
         env:
           GLP1_MEDICARE_DATA: .cache/medicare.json
           GLP1_MEDICAID_DATA: .cache/medicaid.json
+      - name: Install browser check tools
+        run: |
+          python -m pip install "playwright>=1.49,<2"
+          python -m playwright install --with-deps chromium
+      - name: Check dashboard interactions in Chromium
+        run: python tests/check_dashboard_browser.py
       - name: Prepare public dashboard
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && github.event.repository.has_pages && !github.event.repository.private
         run: |

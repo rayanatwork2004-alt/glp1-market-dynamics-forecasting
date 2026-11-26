@@ -183,7 +183,7 @@ def plot_market_share_evolution(
         colors=[BRAND_PALETTE[col] for col in pivot.columns],
         alpha=0.92,
     )
-    ax.set_title("GLP-1 Brand TRx Market Share Evolution", pad=16)
+    ax.set_title("Synthetic GLP-1 Brand TRx Share", pad=16)
     ax.set_xlabel("Month")
     ax.set_ylabel("TRx Market Share")
     ax.set_ylim(0.0, 1.0)
@@ -211,7 +211,7 @@ def plot_segment_forecast(
     segment_name: str,
     output_path: Optional[Path] = None,
 ) -> plt.Figure:
-    """Plot one segment's history, forecast, and 95% confidence interval."""
+    """Plot one segment's history, forecast, and 95% prediction interval."""
     _set_theme()
 
     hist = (
@@ -248,10 +248,10 @@ def plot_segment_forecast(
         fcst["Lower_95"],
         fcst["Upper_95"],
         alpha=0.18,
-        label="95% Confidence Interval",
+        label="95% Prediction Interval",
     )
     ax.axvline(fcst["Month"].min(), linestyle=":", linewidth=1.5)
-    ax.set_title(f"Predictive Forecast — {segment_name}", pad=16)
+    ax.set_title(f"Synthetic Forecast — {segment_name}", pad=16)
     ax.set_xlabel("Month")
     ax.set_ylabel(metric_name.replace("_", " "))
 

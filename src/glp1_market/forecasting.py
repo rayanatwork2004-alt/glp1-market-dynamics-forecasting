@@ -8,6 +8,7 @@ from typing import Iterable, Optional
 
 import numpy as np
 import pandas as pd
+from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 
@@ -18,6 +19,9 @@ class SarimaxSpec:
     order: tuple[int, int, int]
     seasonal_order: tuple[int, int, int, int]
     aic: float
+    converged: bool | None = None
+    residual_lag1: float = np.nan
+    ljung_box_pvalue: float = np.nan
 
 
 def _trim_leading_zeros(series: pd.Series) -> pd.Series:
@@ -88,7 +92,7 @@ def select_sarimax_model(series: pd.Series) -> SarimaxSpec:
                 )
                 fitted = model.fit(disp=False, maxiter=120)
 
-            if np.isfinite(fitted.aic) and (
+            if fitted.mle_retvals.get("converged") and np.isfinite(fitted.aic) and (
                 best is None or fitted.aic < best.aic
             ):
                 best = SarimaxSpec(
@@ -114,7 +118,7 @@ def forecast_series(
     metric_name: str,
     segment_name: str,
 ) -> tuple[pd.DataFrame, SarimaxSpec]:
-    """Fit a SARIMAX model and return mean forecast with 95% intervals."""
+    """Fit a SARIMAX model and return a back-transformed point forecast and prediction intervals."""
     clean = series.astype(float).replace([np.inf, -np.inf], np.nan).dropna()
     clean = _trim_leading_zeros(clean)
     spec = select_sarimax_model(clean)
@@ -135,6 +139,7 @@ def forecast_series(
     prediction = fitted.get_forecast(steps=forecast_periods)
     mean_log = prediction.predicted_mean
     interval_log = prediction.conf_int(alpha=0.05)
+    interval_80 = prediction.conf_int(alpha=0.20)
 
     forecast_index = pd.date_range(
         clean.index.max() + pd.offsets.MonthBegin(1),
@@ -156,12 +161,26 @@ def forecast_series(
                 np.expm1(interval_log.iloc[:, 1].to_numpy()),
                 0.0,
             ),
+            "Lower_80": np.maximum(np.expm1(interval_80.iloc[:, 0]), 0.0).to_numpy(),
+            "Upper_80": np.maximum(np.expm1(interval_80.iloc[:, 1]), 0.0).to_numpy(),
             "AIC": fitted.aic,
             "Order": str(spec.order),
             "Seasonal_Order": str(spec.seasonal_order),
         }
     )
-    return result, SarimaxSpec(spec.order, spec.seasonal_order, fitted.aic)
+    errors = pd.Series(fitted.filter_results.standardized_forecasts_error[0])
+    errors = errors.iloc[fitted.loglikelihood_burn :].replace([np.inf, -np.inf], np.nan).dropna()
+    lag = min(6, len(errors) // 4)
+    model_df = spec.order[0] + spec.order[2] + spec.seasonal_order[0] + spec.seasonal_order[2]
+    pvalue = (
+        acorr_ljungbox(errors, lags=[lag], model_df=model_df)["lb_pvalue"].iloc[0]
+        if lag > model_df and errors.std() > 0
+        else np.nan
+    )
+    return result, SarimaxSpec(
+        spec.order, spec.seasonal_order, fitted.aic,
+        bool(fitted.mle_retvals.get("converged")), errors.autocorr(), pvalue,
+    )
 
 
 def forecast_segmented_metric(
@@ -196,6 +215,9 @@ def forecast_segmented_metric(
                 "AIC": spec.aic,
                 "Order": str(spec.order),
                 "Seasonal_Order": str(spec.seasonal_order),
+                "Converged": spec.converged,
+                "Residual_ACF_1": spec.residual_lag1,
+                "Ljung_Box_P_Value": spec.ljung_box_pvalue,
                 "Training_Observations": int((_trim_leading_zeros(series)).shape[0]),
             }
         )
@@ -250,7 +272,7 @@ def build_forecasts(
     pharma_revenue_forecast["Revenue_Per_TRx"] = (
         pharma_revenue_forecast["Segment"].map(revenue_per_trx)
     )
-    for column in ["Forecast", "Lower_95", "Upper_95"]:
+    for column in ["Forecast", "Lower_95", "Upper_95", "Lower_80", "Upper_80"]:
         pharma_revenue_forecast[column] = (
             pharma_revenue_forecast[column]
             * pharma_revenue_forecast["Revenue_Per_TRx"]

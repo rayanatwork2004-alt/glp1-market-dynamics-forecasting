@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GLP-1 Market Lab</title>
+<style>
+:root {color-scheme:light; --ink:#132c2a; --muted:#465e59; --green:#00786c; --paper:#f5f8f4; --line:#d6e1da;}
+* {box-sizing:border-box}
+body {margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 system-ui,sans-serif}
+header {background:#143732;color:#fff;padding:46px max(5vw, 24px) 36px}
+header p {max-width:760px;margin:12px 0 0;color:#d5e9de}
+h1 {font:clamp(38px,6vw,72px)/1.05 Georgia,serif;margin:12px 0}
+h2 {font:34px/1.15 Georgia,serif;margin:0 0 8px}
+h3 {margin:0 0 8px}
+small,.hint {color:var(--muted)}
+header small {color:#a7e0cb;font-size:.85rem;letter-spacing:.09em;text-transform:uppercase}
+nav {display:flex;flex-wrap:wrap;gap:12px;padding:18px 0}
+main {max-width:1180px;margin:auto;padding:0 24px 40px}
+a {color:var(--green)}
+nav a,select {font:inherit;background:white;border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+section {scroll-margin-top:20px;margin:0 0 20px;padding:24px;background:white;border:1px solid var(--line);border-radius:14px}
+.controls,.legend {display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center}
+.legend {margin:8px 0 0}
+.swatch {display:inline-block;width:14px;height:4px;margin-right:6px;vertical-align:middle}
+svg {width:100%;height:auto;display:block;margin:12px 0;overflow:visible}
+.grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin:16px 0}
+.card {padding:12px;background:#eef5ef;border-radius:8px}
+.card strong {display:block;font:27px Georgia,serif}
+.scroller {overflow:auto}
+table {border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td {border-bottom:1px solid var(--line);text-align:left;padding:8px;white-space:nowrap}
+caption {text-align:left;font-weight:bold}
+</style>
+</head>
+<body>
+<header><small>Healthcare analytics portfolio · Synthetic data</small><h1>GLP-1 Market Lab</h1>
+<p>Explore how prescriptions are distributed across four brands, how well the forecasts hold up, and what happens when commercial assumptions change.</p></header>
+<main>
+<nav aria-label="Dashboard sections"><a href="#market">Market overview</a><a href="#forecast">Forecast audit</a><a href="#scenario">Scenario explorer</a></nav>
+<section id="market"><h2>Market overview</h2><p class="hint">Share uses total prescriptions (TRx) across the four modeled brands. A prescription count can include refills and is distinct from a patient count.</p>
+<div id="market-cards" class="grid"></div><div id="market-chart"></div><div id="market-table" class="scroller"></div></section>
+<section id="forecast"><h2>Forecast audit</h2><p class="hint">Each model is fit using only months before its forecast. Last value carries forward the most recent observation.</p>
+<div class="controls"><label>Segment <select id="segment"></select></label><label>Months ahead <select id="horizon"><option>1</option><option selected>3</option><option>6</option></select></label></div>
+<div id="forecast-chart"></div><div id="held-out"></div><div id="audit" class="scroller" aria-live="polite"></div><p id="diagnostics" class="hint"></p>
+<p class="hint">WAPE is total absolute error divided by total observed volume or sales. Positive bias means overforecasting. Coverage is the share of held out observations inside each prediction interval. With few observations, coverage can swing sharply. The 24 month view extends beyond the tested horizons.</p></section>
+<section id="scenario"><h2>Scenario explorer</h2><p class="hint">Compare hypothetical business conditions with the statistical base forecast. Payer coverage means whether and under what conditions an insurer pays for a treatment.</p>
+<label>Commercial assumption <select id="case"></select></label>
+<p id="assumptions" aria-live="polite"></p><div id="scenario-cards" class="grid"></div><div id="scenario-chart"></div>
+<p class="hint">The nutrition response is a simulation assumption. The gross figure applies synthetic revenue per prescription and excludes rebates and actual net pricing. Manufacturer HHI measures concentration within this four brand panel on a 0 to 10,000 scale.</p></section>
+<section><h2>What I’d check next</h2><p>I’d use prescription and coverage data to check whether a change came from more demand or a shift between brands. For nutrition, I’d test the assumed lag with independent sales data before using it to plan inventory.</p>
+<p id="lag-note" class="hint"></p></section></main>
+<script type="application/json" id="data">__PIPELINE_DATA__</script>
+<script>
+"use strict";
+const data = JSON.parse(document.getElementById("data").textContent);
+const el = id => document.getElementById(id);
+const fmt = new Intl.NumberFormat("en-US", {notation:"compact", maximumFractionDigits:2});
+const pct = n => n == null ? "—" : (n*100).toFixed(1)+"%";
+const compact = n => n == null ? "—" : fmt.format(n);
+const money = n => "$"+compact(n);
+const total = (rows,key) => rows.reduce((sum,row)=>sum+row[key],0);
+const month = d => d.slice(0,7);
+const colors = ["#00786c","#975018","#4059a4","#a23463"];
+const svgNS = "http://www.w3.org/2000/svg";
+function node(tag, attrs, label) {
+  const item = document.createElementNS(svgNS,tag);
+  Object.entries(attrs).forEach(([key,val])=>item.setAttribute(key,val));
+  if (label !== undefined) item.textContent=label;
+  return item;
+}
+function chart(id, title, dates, series, format, band) {
+  const w=720,h=255,left=67,right=24,top=12,bottom=30;
+  const values=series.flatMap(s=>s.values).concat(band ? band.high : []).filter(Number.isFinite);
+  const max=Math.max(1e-6,...values)*1.06;
+  const x=i=>left+i*(w-left-right)/Math.max(1,dates.length-1);
+  const y=v=>h-bottom-v/max*(h-top-bottom);
+  const svg=node("svg",{viewBox:"0 0 "+w+" "+h,role:"img","aria-label":title});
+  svg.append(node("title",{},title));
+  for(let i=0;i<=4;i++){
+    const v=max*i/4;
+    svg.append(node("line",{x1:left,x2:w-right,y1:y(v),y2:y(v),stroke:"#d6e1da"}));
+    svg.append(node("text",{x:left-8,y:y(v)+4,"text-anchor":"end","font-size":12,fill:"#465e59"},format(v)));
+  }
+  const marks=[0,Math.floor((dates.length-1)/2),dates.length-1];
+  [...new Set(marks)].filter(i=>i>=0).forEach(i=>svg.append(node("text",
+    {x:x(i),y:h-7,"text-anchor":"middle","font-size":12,fill:"#465e59"},month(dates[i]))));
+  if(band){
+    const upper=band.high.flatMap((v,i)=>v==null?[]:[[x(i),y(v)]]);
+    const lower=band.low.flatMap((v,i)=>v==null?[]:[[x(i),y(v)]]).reverse();
+    svg.append(node("polygon",{points:[...upper,...lower].join(" "),fill:"#d9ede5"}));
+  }
+  series.forEach(s=>{
+    let path="", pen=false;
+    s.values.forEach((v,i)=>{
+      if(v==null){pen=false;return;}
+      path+=(pen?" L":" M")+x(i)+" "+y(v);
+      pen=true;
+    });
+    svg.append(node("path",{d:path,fill:"none",stroke:s.color,"stroke-width":2.5,
+      "stroke-dasharray":s.dash?"6 4":"none"}));
+  });
+  const heading=document.createElement("h3");heading.textContent=title;
+  const legend=document.createElement("div");legend.className="legend";
+  [...series,...(band?[{label:"95% prediction interval",color:"#b8dbcb"}]:[])].forEach(s=>{
+    const label=document.createElement("span");
+    const swatch=document.createElement("span");swatch.className="swatch";swatch.style.background=s.color;
+    label.append(swatch,s.label);legend.append(label);
+  });
+  el(id).replaceChildren(heading,svg,legend);
+}
+function table(id, label, heads, rows) {
+  const table=document.createElement("table");
+  table.createCaption().textContent=label;
+  const head=table.createTHead().insertRow();
+  heads.forEach(name=>{const th=document.createElement("th");th.scope="col";th.textContent=name;head.append(th);});
+  const body=table.createTBody();
+  rows.forEach(row=>{const tr=body.insertRow();row.forEach(v=>tr.insertCell().textContent=v);});
+  el(id).replaceChildren(table);
+}
+function cards(id, items){
+  el(id).replaceChildren(...items.map(([label,value])=>{
+    const card=document.createElement("div");card.className="card";
+    const number=document.createElement("strong");number.textContent=value;
+    card.append(label,number);return card;
+  }));
+}
+function options(id, names){el(id).replaceChildren(...names.map(n=>new Option(n,n)));}
+const history=data.history;
+const dates=[...new Set(history.map(r=>r.Month))].sort();
+const brands=[...new Set(history.map(r=>r.Brand_Name))].sort();
+const monthly = new Map(dates.map(d=>[d,total(history.filter(r=>r.Month===d),"TRx")]));
+const latest=history.filter(r=>r.Month===dates.at(-1)).sort((a,b)=>b.TRx-a.TRx);
+cards("market-cards",[["Latest monthly TRx",compact(monthly.get(dates.at(-1)))],
+  ["Leading brand",latest[0].Brand_Name],["Leader share",pct(latest[0].TRx/monthly.get(dates.at(-1)))]]);
+chart("market-chart","Brand share over time",dates,brands.map((b,i)=>({
+  label:b,color:colors[i],values:dates.map(d=>history.find(r=>r.Month===d&&r.Brand_Name===b).TRx/monthly.get(d))
+})),pct);
+table("market-table","Competitive landscape · "+month(dates.at(-1)),
+  ["Brand","Manufacturer","Molecule","TRx","Panel share"],
+  latest.map(r=>[r.Brand_Name,r.Manufacturer,r.Molecule,compact(r.TRx),pct(r.TRx/monthly.get(r.Month))]));
+const segments=[...new Set(data.forecasts.filter(r=>r.Metric!=="Gross_Revenue_USD").map(r=>r.Segment))];
+options("segment",segments);if(segments.includes("Zepbound"))el("segment").value="Zepbound";
+function updateForecast(){
+  const segment=el("segment").value,h=Number(el("horizon").value);
+  const forecast=data.forecasts.filter(r=>r.Segment===segment&&r.Metric!=="Gross_Revenue_USD");
+  const isTrx=forecast[0].Metric==="TRx", format=isTrx?compact:money;
+  const actual=(isTrx ? history.filter(r=>r.Brand_Name===segment) :
+    data.nutrition_history.filter(r=>r.Supplement_Category===segment)).sort((a,b)=>a.Month.localeCompare(b.Month));
+  const padding=Array(actual.length).fill(null);
+  chart("forecast-chart",segment+(isTrx?" · prescriptions":" · nutrition sales"),
+    [...actual.map(r=>r.Month),...forecast.map(r=>r.Month)],
+    [{label:"Synthetic history",color:colors[0],values:actual.map(r=>isTrx?r.TRx:r.Total_Sales_USD)},
+     {label:"Forecast",color:colors[2],dash:true,values:[...padding,...forecast.map(r=>r.Forecast)]}],format,{high:[...padding,...forecast.map(r=>r.Upper_95)],low:[...padding,...forecast.map(r=>r.Lower_95)]});
+  const tests=data.detail.filter(r=>r.Segment===segment&&r.Horizon===h);
+  const testedDates=[...new Set(tests.map(r=>r.Month))].sort();
+  const heldOutSeries=[
+    {label:"Held out observation",color:colors[0],values:testedDates.map(d=>tests.find(r=>r.Month===d).Actual)},
+    ...["SARIMAX","Last value"].map((model,i)=>({label:model,color:colors[i+1],dash:i===1,
+      values:testedDates.map(d=>tests.find(r=>r.Month===d&&r.Model===model)?.Prediction ?? null)}))
+  ];
+  if(testedDates.length)chart("held-out","Held out forecasts",testedDates,heldOutSeries,format);
+  else el("held-out").textContent="Insufficient history for this backtest.";
+  const rows=data.audit.filter(r=>r.Segment===segment&&r.Horizon===h);
+  table("audit","Held out scorecard · "+h+" months ahead",
+    ["Model","Forecasts","MAE","RMSE","WAPE","Bias","80% coverage","95% coverage","Failed to converge"],
+    rows.map(r=>[r.Model,r.N,format(r.MAE),format(r.RMSE),pct(r.WAPE),
+    r.Bias==null?"—":format(r.Bias),pct(r.Coverage_80),pct(r.Coverage_95),
+    r.Model==="SARIMAX"?r.Nonconverged:"—"]));
+  const d=data.diagnostics.find(r=>r.Segment===segment);
+  el("diagnostics").textContent=d ? "Final fit · "+d.Training_Observations+" observations · Converged: "+(d.Converged?"yes":"no")+
+    " · Lag 1 residual autocorrelation: "+(d.Residual_ACF_1==null?"—":d.Residual_ACF_1.toFixed(2))+
+    " · Ljung–Box p-value: "+(d.Ljung_Box_P_Value==null?"—":d.Ljung_Box_P_Value.toFixed(3)) : "";
+}
+options("case",[...new Set(data.scenarios.map(r=>r.Scenario))]);
+function updateScenario(){
+  const rows=data.scenarios.filter(r=>r.Scenario===el("case").value), last=rows.at(-1);
+  const delta=(base,scenario,format)=>{const v=total(rows,scenario)-total(rows,base);return (v>0?"+":"")+format(v);};
+  el("assumptions").textContent=last.Assumptions;
+  cards("scenario-cards",[["TRx change vs base",delta("Base_TRx","TRx",compact)],
+    ["Gross USD change",delta("Base_Gross_USD","Gross_USD",compact)],
+    ["Nutrition USD change",delta("Base_Nutrition_USD","Nutrition_USD",compact)],
+    ["Final Eli Lilly share",pct(last.Lilly_Share)],
+    ["Final manufacturer HHI",Math.round(last.Manufacturer_HHI).toLocaleString()]]);
+  chart("scenario-chart","Monthly prescription volume",rows.map(r=>r.Month),[
+    {label:"Base",color:colors[2],dash:true,values:rows.map(r=>r.Base_TRx)},
+    {label:"Selected scenario",color:colors[0],values:rows.map(r=>r.TRx)}],compact);
+}
+for(const id of ["segment","horizon"])el(id).addEventListener("change",updateForecast);
+el("case").addEventListener("change",updateScenario);
+const peak=data.correlation.filter(r=>r.Correlation_Type==="First_Difference"&&r.Pearson_Correlation!=null)
+  .sort((a,b)=>b.Pearson_Correlation-a.Pearson_Correlation)[0];
+if(peak)el("lag-note").textContent="In the simulation, monthly changes aligned most closely at a "+peak.TRx_Lead_Months+
+  " month prescription lead (r = "+peak.Pearson_Correlation.toFixed(2)+"). The relationship was built into the generator.";
+updateForecast();updateScenario();
+</script>
+</body>
+</html>
